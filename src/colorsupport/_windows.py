@@ -68,9 +68,8 @@ def enable_vt(stream: Any = None) -> bool:
     from ctypes import wintypes
 
     handle = wintypes.HANDLE(_handle(stream))
-    if not ctypes.windll.kernel32.SetConsoleMode(handle, mode | VT_PROCESSING):
-        return False
-    return vt_enabled(stream) is True
+    # Consoles older than Windows 10 refuse the flag, so success means it is on.
+    return bool(ctypes.windll.kernel32.SetConsoleMode(handle, mode | VT_PROCESSING))
 
 
 def windows_build() -> int:

@@ -62,6 +62,20 @@ def test_unreadable_entries_give_none() -> None:
     assert parse_colors(negative) is None
 
 
+def test_negative_section_sizes_are_unreadable() -> None:
+    # Without the sign checks these offsets would land on the 256 stored below.
+    numbers = struct.pack("<15h", *([-1] * 13 + [256, -1]))
+    for names, booleans in ((-2, 4), (4, -2)):
+        header = struct.pack("<6h", LEGACY, names, booleans, 15, 0, 0)
+        assert parse_colors(header + b"\0" * 2 + numbers) is None
+
+
+def test_thirteen_numbers_have_no_colors_even_with_more_data() -> None:
+    header = struct.pack("<6h", LEGACY, 2, 0, 13, 0, 0)
+    data = header + b"a\0" + struct.pack("<13h", *([-1] * 13)) + struct.pack("<h", 256) * 4
+    assert parse_colors(data) is None
+
+
 def install(folder: Path, term: str, data: bytes, *, hexed: bool = False) -> None:
     sub = folder / (f"{ord(term[0]):02x}" if hexed else term[0])
     sub.mkdir(parents=True, exist_ok=True)
@@ -115,6 +129,20 @@ def test_names_that_could_leave_the_folder_are_refused(tmp_path: Path, term: str
     (tmp_path / "a").mkdir()
     env = {"TERMINFO": str(tmp_path / "a")}
     assert terminfo_colors(term, env) is None
+
+
+def test_a_dot_name_cannot_reach_a_hidden_file(tmp_path: Path) -> None:
+    (tmp_path / ".x").write_bytes(entry(256))
+    assert terminfo_colors(".x", {"TERMINFO": str(tmp_path)}) is None
+
+
+@pytest.mark.parametrize("sep", ["/", "\\"])
+def test_a_separator_cannot_climb_out_of_the_folder(tmp_path: Path, sep: str) -> None:
+    folder = tmp_path / "db"
+    (folder / "x" / "x").mkdir(parents=True)
+    (tmp_path / "secret").write_bytes(entry(256))
+    term = sep.join(["x", "..", "..", "..", "secret"])
+    assert terminfo_colors(term, {"TERMINFO": str(folder)}) is None
 
 
 def test_an_oversized_file_is_not_read(tmp_path: Path) -> None:
