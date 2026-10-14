@@ -152,3 +152,30 @@ def test_a_real_console_is_read_and_switched(tmp_path: Path) -> None:
     assert (before, off) == (False, 0)
     assert (turned, again, after) == (True, True, True)
     assert on == (3 if windows_build() >= 14931 else 2)
+
+
+def test_conemu_and_ansicon_need_a_console() -> None:
+    # The NUL device answers isatty() with True on Windows but has no console mode.
+    assert on_windows(None, ConEmuANSI="ON")[0] is ColorLevel.NONE
+    assert on_windows(None, ANSICON="1", TERM="xterm") == (ColorLevel.BASIC, "TERM=xterm")
+
+
+class Fileno:
+    def __init__(self, value: object) -> None:
+        self.value = value
+
+    def isatty(self) -> bool:
+        return True
+
+    def fileno(self) -> object:
+        if isinstance(self.value, Exception):
+            raise self.value
+        return self.value
+
+
+@pytest.mark.parametrize("value", [10**20, -(10**20), "3", None, RuntimeError("x")])
+def test_hostile_filenos_are_not_consoles(value: object) -> None:
+    stream = Fileno(value)
+    assert console_mode(stream) is None
+    assert enable_vt(stream) is False
+    assert detect(stream, env={}, platform="win32").level is ColorLevel.NONE

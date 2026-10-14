@@ -88,5 +88,14 @@
     "licence": "X11-style ncurses licence",
     "size": 17322,
     "sha256": "31c6309f3bdd9a134c9ef9ead3e83545704f4978fab24eb2346e85f8f39b4c0a"
+  },
+  "ncurses-terminfo.tail.txt": {
+    "title": "ncurses man/terminfo.tail (terminfo(5), Fetching Compiled Descriptions)",
+    "url": "https://raw.githubusercontent.com/ThomasDickey/ncurses-snapshots/6c26c1f46499e2fbedfb2c69c9463eceeab62ca5/man/terminfo.tail",
+    "revision": "commit 6c26c1f46499e2fbedfb2c69c9463eceeab62ca5",
+    "fetched": "2026-10-14",
+    "licence": "X11-style ncurses licence",
+    "size": 75030,
+    "sha256": "73416c918dfdd5607bac617bd77bbe92ab0f988bcca607e172bf42526b47c8e6"
   }
 }

@@ -121,3 +121,20 @@ def test_when_always_overrides_no_color_and_keeps_the_depth() -> None:
 def test_an_unknown_when_raises(when: str) -> None:
     with pytest.raises(ValueError, match="when must be one of auto, always, never"):
         detect(TTY, env={}, when=when)  # type: ignore[arg-type]
+
+
+def test_the_reason_shows_what_the_user_set() -> None:
+    assert on_linux(PIPE, FORCE_COLOR="   ").reason.startswith("FORCE_COLOR='   ' turns color on")
+    assert on_linux(PIPE, FORCE_COLOR=" 2 ").reason == "FORCE_COLOR= 2  asks for 256 colors"
+    digits = "7" * 100_000
+    reason = on_linux(PIPE, FORCE_COLOR=digits).reason
+    assert reason == f"FORCE_COLOR={digits[:40]!r} asks for truecolor"
+
+
+def test_reasons_stay_ascii() -> None:
+    value = "j" + chr(0xE9) + "s"
+    assert on_linux(PIPE, FORCE_COLOR=value).reason.startswith(f"FORCE_COLOR={value!a} turns")
+    term = chr(0x65E5) + "-256color"
+    found = on_linux(TTY, TERM=term)
+    assert (found.level, found.reason) == (ColorLevel.ANSI256, f"TERM={term!a}")
+    assert found.reason.isascii()

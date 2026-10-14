@@ -82,3 +82,13 @@ def test_terminfo_layout_matches_ncurses(upstream: Read) -> None:
     manual = flat(upstream("ncurses-term.5.txt"))
     assert "(octal 0432)" in manual and "(octal 01036)" in manual
     assert (_terminfo._LEGACY_MAGIC, _terminfo._EXTENDED_MAGIC) == (0o432, 0o1036)
+
+
+def test_terminfo_search_order_matches_ncurses(upstream: Read) -> None:
+    manual = flat(upstream("ncurses-terminfo.tail.txt"))
+    section = manual.split("Fetching Compiled Descriptions", 1)[1]
+    steps = ["TERMINFO", "$HOME/.terminfo", "TERMINFO_DIRS", "compiled-in locations"]
+    found = [section.index(step) for step in steps]
+    assert found == sorted(found)
+    assert "colon-separated" in section
+    assert "is interpreted as the system location" in section

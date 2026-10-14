@@ -107,14 +107,15 @@ def test_the_first_readable_entry_wins_even_without_colors(tmp_path: Path) -> No
     first, second = tmp_path / "a", tmp_path / "b"
     install(first, "vt", entry(None))
     install(second, "vt", entry(256))
-    env = {"TERMINFO_DIRS": f"{first}:{second}"}
+    env = {"TERMINFO_DIRS": os.pathsep.join([str(first), str(second)])}
     assert terminfo_colors("vt", env) is None
     install(first, "vt", b"not an entry")
     assert terminfo_colors("vt", env) == 256
 
 
 def test_search_dirs_follow_the_ncurses_order() -> None:
-    env = {"TERMINFO": "/t", "HOME": "/h", "TERMINFO_DIRS": "/a::/b:/t"}
+    sep = os.pathsep
+    env = {"TERMINFO": "/t", "HOME": "/h", "TERMINFO_DIRS": f"/a{sep}{sep}/b{sep}/t"}
     dirs = search_dirs(env)
     assert dirs[:3] == ["/t", os.path.join("/h", ".terminfo"), "/a"]
     assert dirs[3:] == [*SYSTEM_DIRS, "/b"]
@@ -123,7 +124,9 @@ def test_search_dirs_follow_the_ncurses_order() -> None:
     assert search_dirs({"TERMINFO_DIRS": ""}) == list(SYSTEM_DIRS)
 
 
-@pytest.mark.parametrize("term", ["", ".", "..", "../x", "a/b", "a\b", "a\0b", ".hidden"])
+@pytest.mark.parametrize(
+    "term", ["", ".", "..", "../x", "a/b", "a\\b", "a:b", "C:x", "a\0b", ".hidden"]
+)
 def test_names_that_could_leave_the_folder_are_refused(tmp_path: Path, term: str) -> None:
     (tmp_path / "secret").write_bytes(entry(256))
     (tmp_path / "a").mkdir()
@@ -164,3 +167,14 @@ def test_env_defaults_to_the_process_environment(
     install(tmp_path, "foot", entry(256))
     monkeypatch.setenv("TERMINFO", str(tmp_path))
     assert terminfo_colors("foot") == 256
+
+
+def test_system_folders_are_not_searched_on_windows() -> None:
+    assert (SYSTEM_DIRS == ()) is (os.name == "nt")
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="needs POSIX FIFOs")
+def test_a_fifo_in_the_database_does_not_block(tmp_path: Path) -> None:
+    (tmp_path / "f").mkdir()
+    os.mkfifo(tmp_path / "f" / "fifo")  # type: ignore[attr-defined,unused-ignore]
+    assert terminfo_colors("fifo", {"TERMINFO": str(tmp_path)}) is None

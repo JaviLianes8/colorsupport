@@ -76,3 +76,14 @@ def test_level_and_supports_color_pass_every_argument() -> None:
     assert not supports_color(TTY, env={"TERM": "foot"}, platform="linux", terminfo=lambda t: 0)
     assert not supports_color(TTY, env={}, platform="win32", vt=False, windows_build=99999)
     assert supports_color(TTY, env={"TERM": "foot"}, platform="linux", terminfo=lookup)
+
+
+class Odd:
+    isatty = True
+
+
+@pytest.mark.parametrize("error", [RuntimeError("boom"), TypeError("no"), KeyError("k")])
+def test_any_isatty_failure_means_not_a_terminal(error: Exception) -> None:
+    found = detect(Raising(error), env={"COLORTERM": "truecolor"}, platform="linux")
+    assert found.level is ColorLevel.NONE
+    assert detect(Odd(), env={"COLORTERM": "truecolor"}).level is ColorLevel.NONE

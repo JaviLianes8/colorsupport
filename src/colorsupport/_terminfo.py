@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import struct
 from collections.abc import Mapping
 
@@ -18,13 +19,18 @@ _HEADER = struct.Struct("<6h")
 # The extended format limits an entry to 32768 bytes; nothing larger is read.
 _MAX_SIZE = 32768
 
-# Locations ncurses builds commonly compile in, searched after the environment ones.
-SYSTEM_DIRS = (
-    "/etc/terminfo",
-    "/lib/terminfo",
-    "/usr/share/terminfo",
-    "/usr/lib/terminfo",
-    "/usr/share/lib/terminfo",
+# Locations ncurses builds commonly compile in, searched after the environment ones. They
+# mean nothing on Windows, where only the folders named in the environment are searched.
+SYSTEM_DIRS: tuple[str, ...] = (
+    ()
+    if os.name == "nt"
+    else (
+        "/etc/terminfo",
+        "/lib/terminfo",
+        "/usr/share/terminfo",
+        "/usr/lib/terminfo",
+        "/usr/share/lib/terminfo",
+    )
 )
 
 
@@ -67,7 +73,8 @@ def search_dirs(env: Mapping[str, str]) -> list[str]:
     if env.get("HOME"):
         dirs.append(os.path.join(env["HOME"], ".terminfo"))
     if "TERMINFO_DIRS" in env:
-        for part in env["TERMINFO_DIRS"].split(":"):
+        # Colon separated, as in ncurses; semicolons on Windows, where colons follow drives.
+        for part in env["TERMINFO_DIRS"].split(os.pathsep):
             # An empty entry stands for the system location.
             dirs.extend([part] if part else SYSTEM_DIRS)
     dirs.extend(SYSTEM_DIRS)
@@ -78,12 +85,14 @@ def terminfo_colors(term: str, env: Mapping[str, str] | None = None) -> int | No
     """Return how many colors the terminfo entry for `term` declares, or None.
 
     The entry is looked up like ncurses does: `TERMINFO`, `~/.terminfo` (from `HOME`),
-    `TERMINFO_DIRS`, then the usual system folders, under both the letter and the hex
-    subfolder layouts. env defaults to os.environ. Names that could leave the folder
-    (holding a slash, a backslash or a NUL, or starting with a dot) are refused.
+    `TERMINFO_DIRS` (split on os.pathsep), then the usual system folders (none on Windows),
+    under both the letter and the hex subfolder layouts. env defaults to os.environ. Names
+    that could leave the folder (holding a slash, a backslash, a colon or a NUL, or starting
+    with a dot) are refused, and only regular files are read, so a FIFO or a device in the
+    database cannot block the call.
     """
     env = os.environ if env is None else env
-    if not term or term.startswith(".") or any(c in term for c in "/\\\0"):
+    if not term or term.startswith(".") or any(c in term for c in "/\\:\0"):
         return None
     first = term[0]
     for folder in search_dirs(env):
@@ -96,11 +105,20 @@ def terminfo_colors(term: str, env: Mapping[str, str] | None = None) -> int | No
 
 
 def _read(path: str) -> int | None:
+    # O_NONBLOCK keeps open() from waiting on a FIFO; anything but a regular file is skipped.
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
     try:
-        with open(path, "rb") as entry:
-            data = entry.read(_MAX_SIZE + 1)
+        fd = os.open(path, flags)
     except (OSError, ValueError):
         return None
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        data = os.read(fd, _MAX_SIZE + 1)
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
     if len(data) > _MAX_SIZE:
         return None
     return _raw_colors(data)

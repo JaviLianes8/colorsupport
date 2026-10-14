@@ -30,7 +30,8 @@ The unreleased `0.1.0` branch gives `ColorLevel`, `level(stream, env)` and
 - `TERM` containing `256` anywhere means 256 colors; `TERM=xterm-kitty`, `wezterm`,
   `xterm-ghostty`, iTerm2 and Apple Terminal are not recognised; an unknown or missing
   `TERM` on a terminal still gives basic color.
-- No CI provider is recognised, so GitHub Actions logs get no color unless forced.
+- No CI provider is recognised. (Piped CI output still needs forcing, as in supports-color;
+  the provider rules apply when the CI runner gives the program a terminal.)
 - Windows is not handled: a legacy console without virtual terminal processing is reported
   as able to show color, and Windows Terminal and ConEmu are not recognised.
 - The result is a bare level. There is no way to learn why, which is what a user filing

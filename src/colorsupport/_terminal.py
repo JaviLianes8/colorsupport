@@ -67,9 +67,9 @@ def term_level(env: Mapping[str, str], terminfo: Callable[[str], int | None]) ->
 
 def shown(value: str) -> str:
     """An environment value as it can safely appear in a reason."""
-    if value.isprintable() and len(value) <= 40:
+    if value.isascii() and value.isprintable() and len(value) <= 40:
         return value
-    return repr(value[:40])
+    return ascii(value[:40])
 
 
 def _major(version: str) -> int:

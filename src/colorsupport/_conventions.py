@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ._level import ColorLevel
+from ._terminal import shown
 
 WHEN_CHOICES = ("auto", "always", "never")
 
@@ -50,17 +51,18 @@ def read_override(env: Mapping[str, str], when: str) -> Override | None:
 
 def _force_color(raw: str) -> Override:
     # A number asks for an exact level, as in supports-color; any other value only turns
-    # color on and lets the terminal decide the depth.
+    # color on and lets the terminal decide the depth. Unlike supports-color, surrounding
+    # spaces and the case of "false" are ignored.
     text = raw.strip()
     if re.fullmatch(r"[0-9]+", text):
         digits = text.lstrip("0")
         number = 3 if len(digits) > 1 else int(digits or "0")
         level = ColorLevel(min(number, 3))
         if level is ColorLevel.NONE:
-            return Override(level, True, f"FORCE_COLOR={text} turns color off")
+            return Override(level, True, f"FORCE_COLOR={shown(raw)} turns color off")
         wanted = "truecolor" if level is ColorLevel.TRUECOLOR else f"{level.colors} colors"
-        return Override(level, True, f"FORCE_COLOR={text} asks for {wanted}")
-    shown = repr(text[:32])
+        return Override(level, True, f"FORCE_COLOR={shown(raw)} asks for {wanted}")
+    quoted = ascii(raw[:32])
     if text.lower() == "false":
-        return Override(ColorLevel.NONE, True, f"FORCE_COLOR={shown} turns color off")
-    return Override(ColorLevel.BASIC, False, f"FORCE_COLOR={shown} turns color on")
+        return Override(ColorLevel.NONE, True, f"FORCE_COLOR={quoted} turns color off")
+    return Override(ColorLevel.BASIC, False, f"FORCE_COLOR={quoted} turns color on")

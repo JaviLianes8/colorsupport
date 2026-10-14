@@ -74,13 +74,16 @@ print(detect(piped, env={"FORCE_COLOR": "3"}, when="never"))
 
 ## How the level is decided
 
-Highest priority first. A variable set to an empty string counts as unset.
+Highest priority first. `NO_COLOR`, `FORCE_COLOR`, `CLICOLOR_FORCE` and `CLICOLOR` set to an
+empty string count as unset, as their pages ask; the other variables (`CI`, `TF_BUILD`,
+`WT_SESSION`, `COLORTERM`, the CI service names) count when present, as in `supports-color`.
 
 1. `when="never"` gives none; `when="always"` turns color on and skips steps 2 to 5.
 2. `NO_COLOR` gives none.
 3. `FORCE_COLOR`: `0` or `false` gives none; `1`, `2` and `3` give exactly 16, 256 and
    truecolor (larger numbers mean truecolor), even on a pipe; any other value turns color
-   on and lets the terminal decide the depth.
+   on and lets the terminal decide the depth. Surrounding spaces are ignored and `false`
+   is read in any case.
 4. `CLICOLOR_FORCE` turns color on and lets the terminal decide the depth.
 5. `CLICOLOR=0` gives none.
 6. Azure Pipelines (`TF_BUILD` and `AGENT_NAME`) gives 16, even on a pipe.
@@ -89,7 +92,8 @@ Highest priority first. A variable set to an empty string counts as unset.
 9. On Windows, a console stream decides: ConEmu with `ConEmuANSI=ON` gives 256, `ANSICON`
    gives 16, a console without virtual terminal processing gives none, Windows Terminal
    (`WT_SESSION`) gives truecolor, otherwise build 14931 and later give truecolor and
-   10586 and later 256. A terminal that is not a console (mintty, a pty) goes on to step 10.
+   10586 and later 256. A stream that is not a console goes on to step 10. (Under mintty a
+   native Windows Python sees pipes, so it stops at step 7 unless color is forced.)
 10. CI: GitHub Actions, Gitea Actions and CircleCI give truecolor; Travis, AppVeyor,
     GitLab, Buildkite, Drone and Codeship give 16; any other `CI` gives none. TeamCity 9.1
     and later gives 16.
@@ -106,10 +110,14 @@ When color was turned on in steps 1, 3 or 4, the result is never below 16.
 
 - The FORCE_COLOR page lets `FORCE_COLOR` win over `NO_COLOR`; CPython and the CLICOLOR
   page let `NO_COLOR` win. `NO_COLOR` wins here, and `when="always"` is the way past it.
-- CPython reads any non-empty `FORCE_COLOR`, `0` included, as "on". `supports-color` reads
-  `0` and `false` as "off", and so does this library.
-- `supports-color` ignores a `FORCE_COLOR` that is neither a number nor `true`/`false`;
-  the FORCE_COLOR page asks for any non-empty value to turn color on, which is followed.
+- The FORCE_COLOR page and CPython read any non-empty `FORCE_COLOR`, `0` included, as
+  "on". `supports-color` reads `0` and `false` as "off", and so does this library.
+- The CLICOLOR page asks for `FORCE_COLOR` as an alias of `CLICOLOR_FORCE`, color on when
+  either is set. Here `FORCE_COLOR` is read first, so `FORCE_COLOR=0` turns color off even
+  with `CLICOLOR_FORCE` set.
+- `supports-color` ignores a `FORCE_COLOR` that is neither a number nor `true`/`false`
+  (and ` 2 ` or `FALSE` with it); the FORCE_COLOR page asks for any non-empty value to turn
+  color on, which is followed, and spaces and case are forgiven.
 - `supports-color` reads the Windows build without looking at the console mode, and does
   not know ConEmu or Windows Terminal. Here the console mode is read (never changed); call
   `enable_vt` to turn virtual terminal processing on first.
@@ -133,8 +141,10 @@ It returns False and does nothing for pipes, files, other terminals and other sy
 
 `terminfo_colors(term, env)` reads the `colors` number of a compiled terminfo entry
 straight from the database, in the order ncurses searches it (`TERMINFO`, `~/.terminfo`,
-`TERMINFO_DIRS`, then the usual system folders), in both the legacy and the 32-bit
-format. It does not use `curses`, whose `setupterm` can only run once per process.
+`TERMINFO_DIRS`, then the usual system folders, which are skipped on Windows), in both the
+legacy and the 32-bit format. Only regular files are read, and names that could leave the
+database folder are refused. It does not use `curses`, whose `setupterm` can only run once
+per process.
 
 ## Command line
 
@@ -176,7 +186,8 @@ depth and the reason, follows the published conventions and writes down where th
 
 The rules come from no-color.org, force-color.org, the CLICOLOR page, the
 `supports-color` package, CPython's `_colorize`, `anstyle-query`, termstandard/colors,
-the Microsoft console documentation, ConEmu's documentation and ncurses `term(5)`.
+the Microsoft console documentation, ConEmu's documentation and ncurses `term(5)` and
+`terminfo(5)`.
 `tests/upstream/MANIFEST.json` pins each one; `python scripts/fetch_upstream.py` fetches
 them so the tests can check the rules against them.
 

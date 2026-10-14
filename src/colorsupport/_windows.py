@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import sys
 from collections.abc import Mapping
 from typing import Any
@@ -15,10 +16,26 @@ BUILD_256 = 10586
 BUILD_TRUECOLOR = 14931
 
 
+@functools.cache
+def _kernel32() -> Any:
+    # A private handle with its own prototypes, so other libraries' settings on the shared
+    # ctypes.windll instance cannot change how these calls behave.
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.GetConsoleMode.restype = wintypes.BOOL
+    kernel32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.SetConsoleMode.restype = wintypes.BOOL
+    return kernel32
+
+
 def _handle(stream: Any) -> int | None:
+    # Any failure of a foreign stream object means "not a console": detection never raises.
     try:
         fd = stream.fileno()
-    except (AttributeError, ValueError, OSError):
+    except Exception:
         return None
     if sys.platform != "win32" or not isinstance(fd, int):
         return None
@@ -26,20 +43,20 @@ def _handle(stream: Any) -> int | None:
 
     try:
         return msvcrt.get_osfhandle(fd)
-    except OSError:
+    except (OSError, OverflowError):
         return None
 
 
 def console_mode(stream: Any) -> int | None:
     """The console output mode of stream, or None when it is not a Windows console."""
     handle = _handle(stream)
-    if handle is None or sys.platform != "win32":
+    if handle is None:
         return None
     import ctypes
     from ctypes import wintypes
 
     mode = wintypes.DWORD()
-    if not ctypes.windll.kernel32.GetConsoleMode(wintypes.HANDLE(handle), ctypes.byref(mode)):
+    if not _kernel32().GetConsoleMode(handle, ctypes.byref(mode)):
         return None
     return int(mode.value)
 
@@ -60,16 +77,12 @@ def enable_vt(stream: Any = None) -> bool:
     """
     stream = sys.stdout if stream is None else stream
     mode = console_mode(stream)
-    if mode is None or sys.platform != "win32":
+    if mode is None:
         return False
     if mode & VT_PROCESSING:
         return True
-    import ctypes
-    from ctypes import wintypes
-
-    handle = wintypes.HANDLE(_handle(stream))
     # Consoles older than Windows 10 refuse the flag, so success means it is on.
-    return bool(ctypes.windll.kernel32.SetConsoleMode(handle, mode | VT_PROCESSING))
+    return bool(_kernel32().SetConsoleMode(_handle(stream), mode | VT_PROCESSING))
 
 
 def windows_build() -> int:
@@ -82,15 +95,15 @@ def windows_build() -> int:
 def windows_level(
     stream: Any, env: Mapping[str, str], vt: bool | None, build: int | None
 ) -> tuple[ColorLevel, str] | None:
-    """Decide for a Windows terminal, or None to let the TERM rules decide (not a console)."""
+    """Decide for a Windows console, or None to let the TERM rules decide (not a console)."""
+    state = vt_enabled(stream) if vt is None else vt
+    if state is None:
+        return None
     # ConEmu and ANSICON hook the console writes themselves, whatever the console mode.
     if env.get("ConEmuANSI") == "ON":
         return ColorLevel.ANSI256, "ConEmu processes ANSI sequences (ConEmuANSI=ON)"
     if env.get("ANSICON"):
         return ColorLevel.BASIC, "ANSICON is set"
-    state = vt_enabled(stream) if vt is None else vt
-    if state is None:
-        return None
     if not state:
         return ColorLevel.NONE, "the Windows console has virtual terminal processing off"
     if "WT_SESSION" in env:

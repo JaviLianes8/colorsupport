@@ -151,3 +151,8 @@ def test_a_long_term_is_cut_short_in_the_reason() -> None:
     term = "xterm-" + "x" * 100
     assert on_linux(TTY, TERM=term).reason == f"TERM={term[:40]!r}"
     assert on_linux(TTY, TERM="xterm-" + "x" * 34).reason == "TERM=xterm-" + "x" * 34
+
+
+def test_a_huge_iterm_version_is_capped() -> None:
+    found = on_linux(TTY, TERM_PROGRAM="iTerm.app", TERM_PROGRAM_VERSION="9" * 5000)
+    assert found.level is ColorLevel.TRUECOLOR

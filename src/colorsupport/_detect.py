@@ -131,7 +131,8 @@ def _terminal(
 
 
 def _isatty(stream: Any) -> bool:
+    # Any failure of a foreign stream object means "not a terminal": detection never raises.
     try:
         return stream is not None and bool(stream.isatty())
-    except (AttributeError, ValueError, OSError):
+    except Exception:
         return False
