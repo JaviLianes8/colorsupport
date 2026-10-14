@@ -2,14 +2,14 @@
 
 Progress:
 - [x] Brainstorm ranked improvements (this file)
-- [ ] Pin the ground truth: manifest, fetch script, tests that read the pinned sources
-- [ ] Conventions: NO_COLOR, FORCE_COLOR, CLICOLOR, CLICOLOR_FORCE with documented precedence
-- [ ] Terminal rules: COLORTERM, TERM, TERM_PROGRAM, CI providers, terminfo fallback
-- [ ] Windows: console VT mode, Windows Terminal, ConEmu, ANSICON, build number levels
-- [ ] Explained result: `Detection(level, reason)`, `when=` override for `--color=WHEN`
-- [ ] Typed API and contracts: contract test, typing test, README examples executed
-- [ ] Command line: `colorsupport` and `python -m colorsupport`
-- [ ] Docs and packaging: README, CHANGELOG, metadata, sdist contents, installed-wheel e2e
+- [x] Pin the ground truth: manifest, fetch script, tests that read the pinned sources
+- [x] Conventions: NO_COLOR, FORCE_COLOR, CLICOLOR, CLICOLOR_FORCE with documented precedence
+- [x] Terminal rules: COLORTERM, TERM, TERM_PROGRAM, CI providers, terminfo fallback
+- [x] Windows: console VT mode, Windows Terminal, ConEmu, ANSICON, build number levels
+- [x] Explained result: `Detection(level, reason)`, `when=` override for `--color=WHEN`
+- [x] Typed API and contracts: contract test, typing test, README examples executed
+- [x] Command line: `colorsupport` and `python -m colorsupport`
+- [x] Docs and packaging: README, CHANGELOG, metadata, sdist contents, installed-wheel e2e
 - [ ] Gates: ruff format, ruff check, mypy --strict, pytest
 - [ ] Mutation run: removing guarded logic makes the suite fail
 - [ ] Independent review findings fixed with regression tests
