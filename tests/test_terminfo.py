@@ -178,3 +178,11 @@ def test_a_fifo_in_the_database_does_not_block(tmp_path: Path) -> None:
     (tmp_path / "f").mkdir()
     os.mkfifo(tmp_path / "f" / "fifo")  # type: ignore[attr-defined,unused-ignore]
     assert terminfo_colors("fifo", {"TERMINFO": str(tmp_path)}) is None
+
+
+def test_the_entry_file_is_closed_after_reading(tmp_path: Path) -> None:
+    # Windows refuses to delete a file that is still open, so a leaked handle shows here.
+    install(tmp_path, "foot", entry(256))
+    assert terminfo_colors("foot", {"TERMINFO": str(tmp_path)}) == 256
+    (tmp_path / "f" / "foot").unlink()
+    (tmp_path / "f").rmdir()

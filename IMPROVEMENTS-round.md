@@ -10,9 +10,9 @@ Progress:
 - [x] Typed API and contracts: contract test, typing test, README examples executed
 - [x] Command line: `colorsupport` and `python -m colorsupport`
 - [x] Docs and packaging: README, CHANGELOG, metadata, sdist contents, installed-wheel e2e
-- [ ] Gates: ruff format, ruff check, mypy --strict, pytest
-- [ ] Mutation run: removing guarded logic makes the suite fail
-- [ ] Independent review findings fixed with regression tests
+- [x] Gates: ruff format, ruff check, mypy --strict, pytest
+- [x] Mutation run: removing guarded logic makes the suite fail
+- [x] Independent review findings fixed with regression tests
 - [ ] Pull request opened, guard clean
 
 ## Starting point
@@ -60,6 +60,9 @@ Copies are kept in the ignored `tests/upstream/` folder, recorded in
   `truecolor` or `24bit` as the truecolor signal.
 - MicrosoftDocs/Console-Docs `docs/includes/console-mode-flags.md` at
   50eb4826f13887a146bb0f947cf46b39b5344f77: `ENABLE_VIRTUAL_TERMINAL_PROCESSING` is `0x0004`.
+- ncurses `man/term.5`, `man/terminfo.tail` and `include/Caps` at
+  6c26c1f46499e2fbedfb2c69c9463eceeab62ca5 (ThomasDickey/ncurses-snapshots): the compiled
+  entry layout, the two magic numbers, `max_colors` as the 14th number, the search order.
 - ConEmu, https://conemu.github.io/en/AnsiEscapeCodes.html (read, not pinned): `ConEmuANSI`
   is `ON` or `OFF`; 256 colors with ANSI processing, 24-bit only with an extra setting.
 
@@ -109,3 +112,48 @@ The sources disagree in places, and each choice is written down in the README:
 - Querying the terminal with escape sequences (needs raw mode and a reply, not deterministic).
 - Translating ANSI into Win32 console calls for consoles older than Windows 10 (colorama's
   job); such consoles are reported as having no color.
+
+## Verification
+
+- Gates on a fresh clone on a second Windows machine (CPython 3.14.2): `ruff format --check .`,
+  `ruff check .`, `mypy --strict src` and `pytest`, first without the pinned sources (their
+  tests skip) and again after `scripts/fetch_upstream.py`. Locally (CPython 3.13.2) the same
+  gates plus `mypy --strict src tests` and `mypy --strict --platform linux src`.
+- With `COLORSUPPORT_E2E=1` the installed-wheel test builds the wheel and sdist, checks their
+  contents (no plan, no third-party files, manifest and fetch script kept), installs the wheel
+  in a fresh venv and drives the API, the `colorsupport` script and `python -m colorsupport`.
+- A real Windows console is created hidden for one test: its mode is read, `enable_vt` turns
+  processing on and the level follows.
+- terminfo against a real database (WSL Ubuntu): `xterm-256color` reads 256, `xterm` 8, and a
+  FIFO in the database returns at once.
+- Mutation runs (one change at a time, no bytecode, `__pycache__` purged, 240 s per mutant,
+  suite green before and after). First run, 88 mutants: 12 alive, killed by tests for `CI` by
+  presence, `CI_NAME`, TeamCity anchoring, TERM case, the reason length cap, negative and
+  short terminfo sections, the dot and separator name guards; the `enable_vt` re-read was
+  dropped as redundant. After the review, 96 mutants: 4 alive. Equivalent: the forced floor
+  (always 16 when not exact), the regular-file check and the empty `TERMINFO_DIRS` entry on
+  Windows (no FIFOs, no system folders; both are covered on POSIX). The fd leak survivor is now
+  killed by a test that deletes the entry after reading it.
+- The review regression tests were run against the code before the fixes: 12 fail there (the
+  FIFO test skips on Windows and was checked in WSL).
+
+## Review fixes
+
+An independent review attacked the branch; every finding below is fixed with a test that
+fails without the fix:
+
+- A FIFO (or a device) in the terminfo database blocked the lookup forever. Entries are now
+  opened non-blocking and read only when they are regular files; handles are always closed.
+- On Windows a drive-relative TERM (`C:x`) could leave the database folder, `TERMINFO_DIRS`
+  was split on colons and the POSIX system folders were searched. Colons are refused,
+  `os.pathsep` splits, and Windows searches only the folders the environment names.
+- Reasons could hold characters the console cannot encode, crashing the command line; they
+  are now ASCII. `FORCE_COLOR` reasons show the value the user set, cut to 40 characters.
+- Streams whose `isatty` or `fileno` misbehave in other ways (any exception, a non-callable,
+  an out-of-range descriptor) no longer raise.
+- ConEmu and ANSICON were trusted for streams that are not consoles (the NUL device answers
+  `isatty` with True). The console check now comes first.
+- Docs: which variables treat an empty value as unset, the FORCE_COLOR page's own "any
+  value" rule, `FORCE_COLOR` read before `CLICOLOR_FORCE`, the forgiving spaces and case,
+  mintty under native Windows Python, and the terminfo(5) search order (now pinned and tested).
+- Also adopted: a private `kernel32` handle with explicit prototypes.
