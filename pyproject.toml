@@ -1,21 +1,31 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "colorsupport"
 version = "0.1.0"
-description = "Detect a terminal stream color level (none, 16, 256, truecolor) honoring NO_COLOR and FORCE_COLOR"
+description = "Detect how much color a terminal stream can show (none, 16, 256, truecolor) and why, following NO_COLOR, FORCE_COLOR and CLICOLOR, with Windows console and terminfo support, zero dependencies, fully typed"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Javier Lianes", email = "javier@lianes8studio.com" }]
-keywords = []
+keywords = ["color", "colour", "terminal", "ansi", "no-color", "force-color", "clicolor", "truecolor", "256-color", "tty", "isatty", "supports-color", "terminfo", "windows-console", "cli"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Terminals",
+    "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
 dependencies = []
@@ -30,6 +40,20 @@ Issues = "https://github.com/JaviLianes8/colorsupport/issues"
 Changelog = "https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md"
 LinkedIn = "https://www.linkedin.com/in/jlianes/"
 Funding = "https://buymeacoffee.com/jlianesglrs"
+
+[project.scripts]
+colorsupport = "colorsupport._cli:main"
+
+[tool.hatch.build.targets.sdist]
+# Third-party reference files are fetched locally and never shipped; only their manifest is.
+exclude = [
+    ".github",
+    "IMPROVEMENTS-round*.md",
+    "tests/upstream/*.md",
+    "tests/upstream/*.js",
+    "tests/upstream/*.txt",
+    "tests/upstream/*.rs",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/colorsupport"]

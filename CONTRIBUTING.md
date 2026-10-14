@@ -14,6 +14,10 @@ pip install -r requirements-dev.txt
 - Add a test for the behaviour you change. Tests inject time, disk and network; they
   never touch the real thing.
 - Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes.
+- `python scripts/fetch_upstream.py` fetches the pinned reference files the rules come
+  from (never committed); their tests skip until then.
+- `COLORSUPPORT_E2E=1 pytest tests/test_e2e_wheel.py` builds the wheel, installs it in a
+  fresh venv and drives the installed package and command.
 - One logical change per commit, imperative subject line.
 
 Open an issue first if the change is large or shifts the public API.
