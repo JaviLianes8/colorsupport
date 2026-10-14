@@ -1,86 +1,58 @@
-"""Color level detection from a stream and its environment."""
+"""The color levels a stream can show and the explained result of a detection."""
 
 from __future__ import annotations
 
 import enum
-import os
-import sys
-from collections.abc import Mapping
-from typing import Protocol
+from dataclasses import dataclass
+
+_COLORS = (0, 16, 256, 16_777_216)
+_LABELS = ("none", "16", "256", "truecolor")
 
 
 class ColorLevel(enum.IntEnum):
-    """How much color a stream can render, from none up to 24-bit truecolor."""
+    """How much color a stream can show, from none up to 24-bit truecolor.
+
+    The levels compare as numbers, so `level >= ColorLevel.ANSI256` reads naturally.
+    """
 
     NONE = 0
     BASIC = 1
     ANSI256 = 2
     TRUECOLOR = 3
 
+    @property
+    def colors(self) -> int:
+        """The number of colors: 0, 16, 256 or 16777216."""
+        return _COLORS[self]
 
-class SupportsIsatty(Protocol):
-    def isatty(self) -> bool: ...
+    @property
+    def label(self) -> str:
+        """A short name: "none", "16", "256" or "truecolor"."""
+        return _LABELS[self]
 
+    @classmethod
+    def parse(cls, text: str) -> ColorLevel:
+        """Read a level from its label, its name or its number, ignoring case.
 
-_FORCE_VALUES: dict[str, ColorLevel] = {
-    "0": ColorLevel.NONE,
-    "false": ColorLevel.NONE,
-    "": ColorLevel.BASIC,
-    "1": ColorLevel.BASIC,
-    "true": ColorLevel.BASIC,
-    "2": ColorLevel.ANSI256,
-    "3": ColorLevel.TRUECOLOR,
-}
-
-
-def level(
-    stream: SupportsIsatty = sys.stdout,
-    env: Mapping[str, str] = os.environ,
-) -> ColorLevel:
-    """Report the color level of ``stream`` given ``env``.
-
-    Precedence: ``NO_COLOR`` disables everything, then ``FORCE_COLOR`` forces a
-    level, then ``COLORTERM``/``TERM`` decide, and a plain TTY falls back to basic.
-    """
-    if "NO_COLOR" in env:
-        return ColorLevel.NONE
-
-    forced = _forced_level(env)
-    if forced is not None:
-        return forced
-
-    if not _is_a_tty(stream):
-        return ColorLevel.NONE
-
-    colorterm = env.get("COLORTERM", "").strip().lower()
-    if colorterm in ("truecolor", "24bit"):
-        return ColorLevel.TRUECOLOR
-
-    term = env.get("TERM", "").strip().lower()
-    if term == "dumb":
-        return ColorLevel.NONE
-    if "256" in term:
-        return ColorLevel.ANSI256
-    return ColorLevel.BASIC
+        `"truecolor"`, `"TRUECOLOR"` and `"3"` all give `ColorLevel.TRUECOLOR`; `"16"`,
+        `"basic"` and `"1"` give `ColorLevel.BASIC`. Anything else raises ValueError.
+        """
+        if not isinstance(text, str):
+            raise TypeError(f"expected a str, got {type(text).__name__}")
+        key = text.strip().lower()
+        for member in cls:
+            if key in (member.label, member.name.lower(), str(member.value)):
+                return member
+        choices = ", ".join(member.label for member in cls)
+        raise ValueError(f"unknown color level {text!r}; expected one of {choices}")
 
 
-def supports_color(
-    stream: SupportsIsatty = sys.stdout,
-    env: Mapping[str, str] = os.environ,
-) -> bool:
-    """Return whether ``stream`` can render any color at all."""
-    return level(stream, env) > ColorLevel.NONE
+@dataclass(frozen=True)
+class Detection:
+    """A color level and the reason it was chosen, in one short sentence."""
 
+    level: ColorLevel
+    reason: str
 
-def _forced_level(env: Mapping[str, str]) -> ColorLevel | None:
-    if "FORCE_COLOR" not in env:
-        return None
-    value = env["FORCE_COLOR"].strip().lower()
-    return _FORCE_VALUES.get(value, ColorLevel.BASIC)
-
-
-def _is_a_tty(stream: SupportsIsatty) -> bool:
-    try:
-        return bool(stream.isatty())
-    except (ValueError, OSError):
-        return False
+    def __str__(self) -> str:
+        return f"{self.level.label}: {self.reason}"

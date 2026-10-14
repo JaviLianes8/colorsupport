@@ -31,6 +31,13 @@ Changelog = "https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md"
 LinkedIn = "https://www.linkedin.com/in/jlianes/"
 Funding = "https://buymeacoffee.com/jlianesglrs"
 
+[project.scripts]
+colorsupport = "colorsupport._cli:main"
+
+[tool.hatch.build.targets.sdist]
+# Third-party reference files are fetched locally and never shipped; only their manifest is.
+exclude = [".github", "IMPROVEMENTS-round*.md", "tests/upstream/*", "!tests/upstream/MANIFEST.json"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/colorsupport"]
 

@@ -1,10 +1,20 @@
+from __future__ import annotations
+
 import importlib.resources
 
 import colorsupport
 
 # The public API. Add every exported name here as the library grows; this list is the
 # contract and the test below fails if the module and this list disagree.
-PUBLIC_API: list[str] = ["ColorLevel", "level", "supports_color"]
+PUBLIC_API: list[str] = [
+    "ColorLevel",
+    "Detection",
+    "detect",
+    "enable_vt",
+    "level",
+    "supports_color",
+    "terminfo_colors",
+]
 
 
 def test_all_lists_exactly_the_public_api() -> None:
@@ -24,3 +34,14 @@ def test_version_is_a_three_part_string() -> None:
 
 def test_the_package_ships_type_information() -> None:
     assert importlib.resources.files("colorsupport").joinpath("py.typed").is_file()
+
+
+def test_every_public_function_and_class_has_a_docstring() -> None:
+    for name in colorsupport.__all__:
+        assert getattr(colorsupport, name).__doc__, name
+
+
+def test_public_names_come_from_private_modules() -> None:
+    for name in colorsupport.__all__:
+        module = getattr(colorsupport, name).__module__
+        assert module.startswith("colorsupport._"), (name, module)
