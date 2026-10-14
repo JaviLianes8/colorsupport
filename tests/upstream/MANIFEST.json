@@ -1,0 +1,92 @@
+{
+  "no-color.md": {
+    "title": "NO_COLOR page source, jcs/no_color index.md",
+    "url": "https://raw.githubusercontent.com/jcs/no_color/cd23335831f927018abdbba8ea5eb0d3e54f9210/index.md",
+    "revision": "commit cd23335831f927018abdbba8ea5eb0d3e54f9210",
+    "fetched": "2026-10-14",
+    "licence": "none declared",
+    "size": 56888,
+    "sha256": "504f58186480f920ad3af94225f9b3fca919859804cfd02867700adf5b545575"
+  },
+  "force-color.md": {
+    "title": "FORCE_COLOR page source, donatj/force-color.org index.md",
+    "url": "https://raw.githubusercontent.com/donatj/force-color.org/08df127f8d94e6e699915d5f96d7332ab4feb8be/index.md",
+    "revision": "commit 08df127f8d94e6e699915d5f96d7332ab4feb8be",
+    "fetched": "2026-10-14",
+    "licence": "MIT",
+    "size": 2883,
+    "sha256": "f553b9b9fd2f3fba67d42477287110a14658e2f15ac88b855dd8f916bf118bdb"
+  },
+  "clicolors.md": {
+    "title": "CLICOLOR page source, jhasse/clicolors index.md",
+    "url": "https://raw.githubusercontent.com/jhasse/clicolors/f717f230ba595c2310683c59c8eaf0d71438c2b1/index.md",
+    "revision": "commit f717f230ba595c2310683c59c8eaf0d71438c2b1",
+    "fetched": "2026-10-14",
+    "licence": "none declared",
+    "size": 6621,
+    "sha256": "f0aafd20906f3bc9c10853a5c28eabb66d00a170541f866a40b3222ba1badcc9"
+  },
+  "supports-color.js": {
+    "title": "chalk/supports-color index.js",
+    "url": "https://raw.githubusercontent.com/chalk/supports-color/4963567f020de0f4cb15ebdfd3c6f5b7d13d54bf/index.js",
+    "revision": "commit 4963567f020de0f4cb15ebdfd3c6f5b7d13d54bf",
+    "fetched": "2026-10-14",
+    "licence": "MIT",
+    "size": 4474,
+    "sha256": "27a7c10d960b9f37a353581e776132ba182bb8e621766a732f5160df2f16d9f7"
+  },
+  "cpython-colorize.py.txt": {
+    "title": "CPython Lib/_colorize.py",
+    "url": "https://raw.githubusercontent.com/python/cpython/fe7735f03ecd720e717daf221511f74c23cd90dc/Lib/_colorize.py",
+    "revision": "commit fe7735f03ecd720e717daf221511f74c23cd90dc",
+    "fetched": "2026-10-14",
+    "licence": "PSF-2.0",
+    "size": 21245,
+    "sha256": "1d23994801e7c8780f5056149c0c23ca95a5669a3f6e25e077e56bc8914102d9"
+  },
+  "anstyle-query-lib.rs": {
+    "title": "rust-cli/anstyle crates/anstyle-query/src/lib.rs",
+    "url": "https://raw.githubusercontent.com/rust-cli/anstyle/d891cdae9f5d9e923232bb42cecc597be09afe7a/crates/anstyle-query/src/lib.rs",
+    "revision": "commit d891cdae9f5d9e923232bb42cecc597be09afe7a",
+    "fetched": "2026-10-14",
+    "licence": "MIT OR Apache-2.0",
+    "size": 4636,
+    "sha256": "4ce20ab732c39c004a4d768567e4ad93758eaf402262b22ef009386950232c28"
+  },
+  "termstandard-colors.md": {
+    "title": "termstandard/colors README.md",
+    "url": "https://raw.githubusercontent.com/termstandard/colors/caf0bb949ad64307d938a055f7fbec76ce65d91e/README.md",
+    "revision": "commit caf0bb949ad64307d938a055f7fbec76ce65d91e",
+    "fetched": "2026-10-14",
+    "licence": "Unlicense",
+    "size": 23800,
+    "sha256": "19cb0a8ee3ce45f2d8e8b01dc802ef6bfc1577d52ba03a78609461e7d43817d9"
+  },
+  "console-mode-flags.md": {
+    "title": "Microsoft console docs, docs/includes/console-mode-flags.md",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/Console-Docs/50eb4826f13887a146bb0f947cf46b39b5344f77/docs/includes/console-mode-flags.md",
+    "revision": "commit 50eb4826f13887a146bb0f947cf46b39b5344f77",
+    "fetched": "2026-10-14",
+    "licence": "CC-BY-4.0",
+    "size": 8592,
+    "sha256": "72d682c2bf665ed4f53b93f3c6df8a4f66ec3fb9f9f756433a619b1798202ba3"
+  },
+  "ncurses-Caps.txt": {
+    "title": "ncurses include/Caps",
+    "url": "https://raw.githubusercontent.com/ThomasDickey/ncurses-snapshots/6c26c1f46499e2fbedfb2c69c9463eceeab62ca5/include/Caps",
+    "revision": "commit 6c26c1f46499e2fbedfb2c69c9463eceeab62ca5",
+    "fetched": "2026-10-14",
+    "licence": "X11-style ncurses licence",
+    "size": 54979,
+    "sha256": "ea3e6d9a06919c398c0c877ffd1f49a8436c3a089ba1ec6320307a9c2be1c279"
+  },
+  "ncurses-term.5.txt": {
+    "title": "ncurses man/term.5",
+    "url": "https://raw.githubusercontent.com/ThomasDickey/ncurses-snapshots/6c26c1f46499e2fbedfb2c69c9463eceeab62ca5/man/term.5",
+    "revision": "commit 6c26c1f46499e2fbedfb2c69c9463eceeab62ca5",
+    "fetched": "2026-10-14",
+    "licence": "X11-style ncurses licence",
+    "size": 17322,
+    "sha256": "31c6309f3bdd9a134c9ef9ead3e83545704f4978fab24eb2346e85f8f39b4c0a"
+  }
+}
