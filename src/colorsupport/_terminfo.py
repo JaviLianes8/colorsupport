@@ -90,8 +90,15 @@ def terminfo_colors(term: str, env: Mapping[str, str] | None = None) -> int | No
     that could leave the folder (holding a slash, a backslash, a colon or a NUL, or starting
     with a dot) are refused, and only regular files are read, so a FIFO or a device in the
     database cannot block the call.
+
+    An invalid name returns None. A non-string name raises TypeError.
+
+    >>> terminfo_colors("../outside", {}) is None
+    True
     """
     env = os.environ if env is None else env
+    if not isinstance(term, str):
+        raise TypeError("term must be a str")
     if not term or term.startswith(".") or any(c in term for c in "/\\:\0"):
         return None
     first = term[0]

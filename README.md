@@ -1,5 +1,7 @@
 # colorsupport
 
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
 Detect how much color a terminal stream can show (none, 16, 256 or truecolor) and say
 why. It follows the `NO_COLOR`, `FORCE_COLOR`, `CLICOLOR` and `CLICOLOR_FORCE`
 conventions, reads `TERM`, `COLORTERM`, terminfo, CI services and Windows consoles, and
@@ -115,9 +117,16 @@ When color was turned on in steps 1, 3 or 4, the result is never below 16.
 - The CLICOLOR page asks for `FORCE_COLOR` as an alias of `CLICOLOR_FORCE`, color on when
   either is set. Here `FORCE_COLOR` is read first, so `FORCE_COLOR=0` turns color off even
   with `CLICOLOR_FORCE` set.
-- `supports-color` ignores a `FORCE_COLOR` that is neither a number nor `true`/`false`
-  (and ` 2 ` or `FALSE` with it); the FORCE_COLOR page asks for any non-empty value to turn
-  color on, which is followed, and spaces and case are forgiven.
+- The pinned CLICOLOR page's runnable example enables color on a terminal for any
+  non-empty `CLICOLOR`, including `0` and `1`. Here `CLICOLOR=0` disables color unless
+  overridden above, and positive values such as `1` do not establish color support:
+  an otherwise unidentified terminal still gives none. This preserves the 0.1.0 policy.
+- `supports-color` v10.2.2 parses numeric `FORCE_COLOR` with `Number.parseInt`, so ` 2 `
+  sets a forced minimum of 2; its final level can be higher (3 on modern Windows).
+  Here it returns exactly level 2. The manifest's later revision `4963567` requires
+  digits only and ignores ` 2 `. Both ignore `FALSE`; here `false` ignores case and
+  surrounding spaces. Other non-empty, nonnumeric values turn color on here as the
+  FORCE_COLOR page requests.
 - `supports-color` reads the Windows build without looking at the console mode, and does
   not know ConEmu or Windows Terminal. Here the console mode is read (never changed); call
   `enable_vt` to turn virtual terminal processing on first.
@@ -134,7 +143,9 @@ from colorsupport import enable_vt, level
 enable_vt(sys.stdout)  # True when stdout is a console that now reads escape sequences
 ```
 
-`enable_vt` sets `ENABLE_VIRTUAL_TERMINAL_PROCESSING` on the console behind the stream.
+`enable_vt` sets both `ENABLE_PROCESSED_OUTPUT` and `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
+on the console behind the stream, preserving all other mode flags. Detection requires
+both flags before treating native console escape processing as enabled.
 It returns False and does nothing for pipes, files, other terminals and other systems.
 
 ## terminfo
@@ -174,13 +185,17 @@ none: NO_COLOR is set
 | `enable_vt(stream=None)` | Turn on escape sequence processing for a Windows console |
 | `terminfo_colors(term, env=None)` | The `colors` number of a terminfo entry, or None |
 
+The [GUIDE](https://github.com/JaviLianes8/colorsupport/blob/main/GUIDE.md) describes
+the stable API, errors and upgrade behavior. See the
+[CHANGELOG](https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md) for releases.
+
 ## Why
 
 Terminal programs keep rewriting the same check and getting the conventions subtly
 wrong: an empty `NO_COLOR` turning color off, `FORCE_COLOR=0` turning it on, a legacy
 Windows console printing raw escape codes. JavaScript has `supports-color`; Python's own
 check (`_colorize`, 3.13+) is private and answers only yes or no. This library gives the
-depth and the reason, follows the published conventions and writes down where they differ.
+depth and the reason, uses the published conventions and records its policy differences.
 
 ## Sources
 
@@ -188,12 +203,13 @@ The rules come from no-color.org, force-color.org, the CLICOLOR page, the
 `supports-color` package, CPython's `_colorize`, `anstyle-query`, termstandard/colors,
 the Microsoft console documentation, ConEmu's documentation and ncurses `term(5)` and
 `terminfo(5)`.
-`tests/upstream/MANIFEST.json` pins each one; `python scripts/fetch_upstream.py` fetches
-them so the tests can check the rules against them.
+`tests/upstream/MANIFEST.json` pins eleven reference files; `python scripts/fetch_upstream.py`
+fetches them so the tests can check the rules against them. ConEmu documentation is
+background reading and is not included in that pinned, fetched set.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/JaviLianes8/colorsupport/blob/main/LICENSE).
 
 ## Links
 

@@ -6,6 +6,39 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-01
+
+- Stabilize the seven public names, detection precedence, level labels and CLI options
+  from 0.1.0. Python 3.10 through 3.14; no runtime dependencies.
+- Type stream arguments as `object` instead of `Any`, retaining arbitrary stream support.
+- Windows native console detection now requires both processed output and virtual
+  terminal processing. `enable_vt` enables both while preserving all existing mode flags,
+  so consoles with processed output disabled no longer report success with literal escapes.
+- Invalid `ColorLevel(value)` construction raises `ValueError` with a bounded, redacted
+  message, including secret-like text and huge integers; valid enum construction is unchanged.
+- Reject unknown constructor values before enum fallback formatting, without calling their
+  `repr` or `str`, including hostile subclasses and integers beyond the text conversion limit.
+  Failed value comparisons also produce a redacted `ValueError` without exposing the
+  comparison error in exception chains.
+- Invalid `when` and unknown color-level messages no longer repeat the supplied value;
+  non-string level type names are limited to 40 characters.
+- Invalid command-line usage prints bounded option guidance without repeating arguments;
+  its exit code remains 2.
+- `terminfo_colors` now consistently raises `TypeError` for non-string names, including
+  falsey objects that previously returned None and integers that raised AttributeError.
+- Build numbers and injected terminfo counts wider than 64 bits are described as
+  `a large integer` in reasons, avoiding huge messages and integer conversion failures.
+- Add runnable public docstrings, the API guide, seeded robustness tests, reference
+  implementation comparisons, installed-wheel upgrade tests and release contracts.
+- Extend constructor contracts for negative and fractional numbers, non-real complex
+  values, truthy integer-subclass equality and comparison exception redaction.
+  Constructor behavior and the public API are unchanged.
+- Extend constructor contracts for exact Decimal/Fraction precision, non-unit truthy
+  equality results, numeric text rejection, custom comparison errors and failures
+  during equality-result truth conversion. Production behavior remains unchanged.
+- Cover negative truthy equality results, binary numeric text rejection and None
+  rejection in constructor contracts. Production behavior and the public API are unchanged.
+
 ## [0.1.0]
 
 First release.

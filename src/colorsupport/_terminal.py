@@ -72,6 +72,10 @@ def shown(value: str) -> str:
     return ascii(value[:40])
 
 
+def shown_number(value: int) -> str:
+    return str(value) if value.bit_length() <= 64 else "a large integer"
+
+
 def _major(version: str) -> int:
     # The leading ASCII digits; supports-color reads the part before the first dot.
     match = re.match(r"[0-9]+", version)
@@ -93,7 +97,7 @@ def _by_terminfo(term: str, terminfo: Callable[[str], int | None]) -> Found | No
     colors = terminfo(term)
     if colors is None:
         return None
-    reason = f"terminfo for TERM={shown(term)} declares {colors} colors"
+    reason = f"terminfo for TERM={shown(term)} declares {shown_number(colors)} colors"
     if colors >= 16_777_216:
         return ColorLevel.TRUECOLOR, reason
     if colors >= 256:

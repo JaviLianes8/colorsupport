@@ -9,10 +9,29 @@ _COLORS = (0, 16, 256, 16_777_216)
 _LABELS = ("none", "16", "256", "truecolor")
 
 
-class ColorLevel(enum.IntEnum):
+class _ColorLevelType(enum.EnumMeta):
+    # This populated enum supports value lookup, not EnumMeta's enum-creation overload.
+    def __call__(cls, value: object) -> ColorLevel:  # type: ignore[override]
+        # Enum's missing-value path formats repr(value), even when _missing_ raises.
+        # Compare the four values directly to preserve numeric equivalence safely.
+        member: ColorLevel
+        try:
+            for member in cls:
+                if member.value == value:
+                    return member
+        except Exception:
+            pass
+        raise ValueError("unknown color level; expected 0, 1, 2 or 3") from None
+
+
+class ColorLevel(enum.IntEnum, metaclass=_ColorLevelType):
     """How much color a stream can show, from none up to 24-bit truecolor.
 
     The levels compare as numbers, so `level >= ColorLevel.ANSI256` reads naturally.
+    Constructing an unknown value raises ValueError without including the input.
+
+    >>> ColorLevel.TRUECOLOR > ColorLevel.ANSI256
+    True
     """
 
     NONE = 0
@@ -22,12 +41,20 @@ class ColorLevel(enum.IntEnum):
 
     @property
     def colors(self) -> int:
-        """The number of colors: 0, 16, 256 or 16777216."""
+        """The number of colors: 0, 16, 256 or 16777216.
+
+        >>> ColorLevel.ANSI256.colors
+        256
+        """
         return _COLORS[self]
 
     @property
     def label(self) -> str:
-        """A short name: "none", "16", "256" or "truecolor"."""
+        """A short name: "none", "16", "256" or "truecolor".
+
+        >>> ColorLevel.BASIC.label
+        '16'
+        """
         return _LABELS[self]
 
     @classmethod
@@ -35,21 +62,29 @@ class ColorLevel(enum.IntEnum):
         """Read a level from its label, its name or its number, ignoring case.
 
         `"truecolor"`, `"TRUECOLOR"` and `"3"` all give `ColorLevel.TRUECOLOR`; `"16"`,
-        `"basic"` and `"1"` give `ColorLevel.BASIC`. Anything else raises ValueError.
+        `"basic"` and `"1"` give `ColorLevel.BASIC`. Unknown strings raise ValueError;
+        non-strings raise TypeError. Error messages do not include the supplied value.
+
+        >>> ColorLevel.parse(" TrueColor ") is ColorLevel.TRUECOLOR
+        True
         """
         if not isinstance(text, str):
-            raise TypeError(f"expected a str, got {type(text).__name__}")
+            raise TypeError(f"expected a str, got {type(text).__name__[:40]}")
         key = text.strip().lower()
         for member in cls:
             if key in (member.label, member.name.lower(), str(member.value)):
                 return member
         choices = ", ".join(member.label for member in cls)
-        raise ValueError(f"unknown color level {text!r}; expected one of {choices}")
+        raise ValueError(f"unknown color level; expected one of {choices}")
 
 
 @dataclass(frozen=True)
 class Detection:
-    """A color level and the reason it was chosen, in one short sentence."""
+    """An immutable color level and its explanation; constructor arguments are typed.
+
+    >>> print(Detection(ColorLevel.BASIC, "TERM=xterm"))
+    16: TERM=xterm
+    """
 
     level: ColorLevel
     reason: str

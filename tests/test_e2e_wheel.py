@@ -9,11 +9,11 @@ import json
 import os
 import subprocess
 import sys
-import venv
 import zipfile
 from pathlib import Path
 
 import pytest
+from _upgrade import CHANGES, SNAPSHOT
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,9 +25,11 @@ PROGRAM = """
 import importlib.metadata, importlib.resources, io
 import colorsupport
 from colorsupport import ColorLevel, Detection, detect, enable_vt, level, supports_color
+from colorsupport import terminfo_colors
 
 assert "site-packages" in colorsupport.__file__, colorsupport.__file__
 assert importlib.metadata.version("colorsupport") == colorsupport.__version__
+assert colorsupport.__version__ == "1.0.0"
 assert importlib.resources.files("colorsupport").joinpath("py.typed").is_file()
 
 class Tty:
@@ -40,6 +42,7 @@ assert level(io.StringIO(), env={"FORCE_COLOR": "3"}) is ColorLevel.TRUECOLOR
 assert not supports_color(Tty(), env={"NO_COLOR": "1"})
 assert level(Tty(), env={}, platform="win32", vt=False) is ColorLevel.NONE
 assert enable_vt(io.StringIO()) is False
+assert terminfo_colors("../outside", {}) is None
 assert ColorLevel.parse("truecolor").colors == 16777216
 try:
     detect(env={}, when="sometimes")
@@ -53,11 +56,20 @@ print("e2e ok")
 
 def _run(*cmd: str | Path, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [str(c) for c in cmd], cwd=cwd, env=env, capture_output=True, text=True, check=False
+        [str(c) for c in cmd],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=240,
     )
 
 
-def test_installed_wheel_end_to_end(tmp_path: Path) -> None:
+@pytest.mark.parametrize("upgrade", [False, True], ids=["fresh", "pypi-upgrade"])
+def test_installed_wheel_end_to_end(tmp_path: Path, upgrade: bool) -> None:
+    import venv
+
     env = {k: v for k, v in os.environ.items() if not k.startswith(("NO_COLOR", "CLICOLOR"))}
     env.pop("FORCE_COLOR", None)
     dist = tmp_path / "dist"
@@ -68,7 +80,9 @@ def test_installed_wheel_end_to_end(tmp_path: Path) -> None:
     names = zipfile.ZipFile(wheel).namelist()
     assert "colorsupport/py.typed" in names
     assert "colorsupport/__main__.py" in names
+    assert any(name.endswith("/licenses/LICENSE") for name in names)
     assert not any(name.startswith("tests/") for name in names)
+    assert not any("__pycache__" in name or name.endswith(".pyc") for name in names)
     listing = _run(sys.executable, "-m", "tarfile", "-l", sdist, cwd=tmp_path, env=env).stdout
     assert "IMPROVEMENTS-round" not in listing
     assert "tests/upstream/MANIFEST.json" in listing
@@ -76,20 +90,44 @@ def test_installed_wheel_end_to_end(tmp_path: Path) -> None:
     assert "no-color.md" not in listing
     assert "tests/test_upstream.py" in listing
     assert "scripts/fetch_upstream.py" in listing
+    assert "GUIDE.md" in listing and "LICENSE" in listing
+    assert "CERT-1.0-REPORT" not in listing
+    assert "__pycache__" not in listing and ".pytest_cache" not in listing
 
     env_dir = tmp_path / "venv"
     venv.create(env_dir, with_pip=True)
     bindir = env_dir / ("Scripts" if sys.platform == "win32" else "bin")
     python = bindir / "python"
+    work = tmp_path / "work"
+    work.mkdir()
+    old_output = ""
+    if upgrade:
+        installed = _run(
+            python, "-m", "pip", "install", "-q", "colorsupport==0.1.0", cwd=work, env=env
+        )
+        assert installed.returncode == 0, installed.stderr
+        previous = _run(python, "-I", "-c", SNAPSHOT, cwd=work, env=env)
+        assert previous.returncode == 0, previous.stderr
+        old_output = previous.stdout
+        changes = _run(python, "-I", "-c", CHANGES, cwd=work, env=env)
+        assert changes.returncode == 0, changes.stderr
+        bad = _run(python, "-m", "colorsupport", "--when", "secret-token", cwd=work, env=env)
+        assert bad.returncode == 2 and "secret-token" in bad.stderr
     installed = _run(python, "-m", "pip", "install", "-q", wheel, cwd=tmp_path, env=env)
     assert installed.returncode == 0, installed.stderr
 
     # Run from an empty folder so the source tree cannot shadow the install.
-    work = tmp_path / "work"
-    work.mkdir()
     result = _run(python, "-I", "-c", PROGRAM, cwd=work, env=env)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "e2e ok"
+    if upgrade:
+        current = _run(python, "-I", "-c", SNAPSHOT, cwd=work, env=env)
+        assert current.returncode == 0, current.stderr
+        assert current.stdout == old_output
+        changes = _run(python, "-I", "-c", CHANGES, cwd=work, env=env)
+        assert changes.returncode == 0, changes.stderr
+        checked = _run(python, "-m", "pip", "check", cwd=work, env=env)
+        assert checked.returncode == 0, checked.stdout + checked.stderr
 
     script = bindir / ("colorsupport.exe" if sys.platform == "win32" else "colorsupport")
     piped = _run(script, "--json", cwd=work, env=env)
@@ -102,3 +140,8 @@ def test_installed_wheel_end_to_end(tmp_path: Path) -> None:
     assert forced.stdout == "256: FORCE_COLOR=2 asks for 256 colors\n"
     assert _run(script, "--check", "16", cwd=work, env=env).returncode == 1
     assert _run(script, "--check", "8", cwd=work, env=env).returncode == 2
+    assert _run(script, "--when", "never", "--check", "none", cwd=work, env=env).returncode == 0
+    stderr = _run(script, "--stderr", "--json", cwd=work, env={**env, "FORCE_COLOR": "3"})
+    assert stderr.returncode == 0 and json.loads(stderr.stdout)["level"] == "truecolor"
+    bad = _run(script, "--when", "secret-token", cwd=work, env=env)
+    assert bad.returncode == 2 and "secret-token" not in bad.stderr

@@ -8,9 +8,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from ._level import ColorLevel
+from ._terminal import shown_number
 
-# ENABLE_VIRTUAL_TERMINAL_PROCESSING, from the console mode flags in Microsoft's console docs.
+# Microsoft requires processed output together with virtual terminal processing.
 VT_PROCESSING = 0x0004
+PROCESSED_OUTPUT = 0x0001
+_REQUIRED_OUTPUT = PROCESSED_OUTPUT | VT_PROCESSING
 # supports-color: build 10586 is the first with 256 colors, 14931 the first with truecolor.
 BUILD_256 = 10586
 BUILD_TRUECOLOR = 14931
@@ -31,10 +34,13 @@ def _kernel32() -> Any:
     return kernel32
 
 
-def _handle(stream: Any) -> int | None:
+def _handle(stream: object) -> int | None:
     # Any failure of a foreign stream object means "not a console": detection never raises.
     try:
-        fd = stream.fileno()
+        method = getattr(stream, "fileno", None)
+        if not callable(method):
+            return None
+        fd = method()
     except Exception:
         return None
     if sys.platform != "win32" or not isinstance(fd, int):
@@ -47,7 +53,7 @@ def _handle(stream: Any) -> int | None:
         return None
 
 
-def console_mode(stream: Any) -> int | None:
+def console_mode(stream: object) -> int | None:
     """The console output mode of stream, or None when it is not a Windows console."""
     handle = _handle(stream)
     if handle is None:
@@ -61,28 +67,32 @@ def console_mode(stream: Any) -> int | None:
     return int(mode.value)
 
 
-def vt_enabled(stream: Any) -> bool | None:
+def vt_enabled(stream: object) -> bool | None:
     """Whether a Windows console processes escape sequences; None if not a console."""
     mode = console_mode(stream)
-    return None if mode is None else bool(mode & VT_PROCESSING)
+    return None if mode is None else mode & _REQUIRED_OUTPUT == _REQUIRED_OUTPUT
 
 
-def enable_vt(stream: Any = None) -> bool:
+def enable_vt(stream: object = None) -> bool:
     """Turn on escape sequence processing for a Windows console stream.
 
     stream defaults to sys.stdout. Returns True when the stream is a Windows console that
     now processes escape sequences, False otherwise: the stream is not a console (a pipe, a
     file, a pty), the console is too old to accept the mode, or this is not Windows, where
     terminals need no switch. Detection never calls this; it only reads the mode.
+    Enables processed output and virtual terminal processing, preserving all other flags.
+
+    >>> enable_vt(object())
+    False
     """
     stream = sys.stdout if stream is None else stream
     mode = console_mode(stream)
     if mode is None:
         return False
-    if mode & VT_PROCESSING:
+    if mode & _REQUIRED_OUTPUT == _REQUIRED_OUTPUT:
         return True
     # Consoles older than Windows 10 refuse the flag, so success means it is on.
-    return bool(_kernel32().SetConsoleMode(_handle(stream), mode | VT_PROCESSING))
+    return bool(_kernel32().SetConsoleMode(_handle(stream), mode | _REQUIRED_OUTPUT))
 
 
 def windows_build() -> int:
@@ -93,7 +103,7 @@ def windows_build() -> int:
 
 
 def windows_level(
-    stream: Any, env: Mapping[str, str], vt: bool | None, build: int | None
+    stream: object, env: Mapping[str, str], vt: bool | None, build: int | None
 ) -> tuple[ColorLevel, str] | None:
     """Decide for a Windows console, or None to let the TERM rules decide (not a console)."""
     state = vt_enabled(stream) if vt is None else vt
@@ -110,7 +120,13 @@ def windows_level(
         return ColorLevel.TRUECOLOR, "Windows Terminal (WT_SESSION is set)"
     number = windows_build() if build is None else build
     if number >= BUILD_TRUECOLOR:
-        return ColorLevel.TRUECOLOR, f"Windows console with VT processing, build {number}"
+        return (
+            ColorLevel.TRUECOLOR,
+            f"Windows console with VT processing, build {shown_number(number)}",
+        )
     if number >= BUILD_256:
-        return ColorLevel.ANSI256, f"Windows console with VT processing, build {number}"
-    return ColorLevel.BASIC, f"Windows console with VT processing, build {number}"
+        return (
+            ColorLevel.ANSI256,
+            f"Windows console with VT processing, build {shown_number(number)}",
+        )
+    return ColorLevel.BASIC, f"Windows console with VT processing, build {shown_number(number)}"

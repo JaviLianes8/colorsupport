@@ -82,6 +82,19 @@ def test_bad_level_names_the_choices(capsys: pytest.CaptureFixture[str]) -> None
     assert "expected one of none, 16, 256, truecolor" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("prefix", [[], ["--check"], ["--when"]])
+def test_invalid_arguments_are_not_echoed(
+    prefix: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    secret = "secret-token-" + "x" * 100_000
+    with pytest.raises(SystemExit) as raised:
+        main([*prefix, secret])
+    assert raised.value.code == 2
+    output = capsys.readouterr()
+    assert "secret-token" not in output.err
+    assert len(output.err) < 1000 and output.out == ""
+
+
 def test_runs_as_a_module() -> None:
     command = [sys.executable, "-B", "-m", "colorsupport", "--json"]
     env = {k: v for k, v in os.environ.items() if k not in ("NO_COLOR", "CLICOLOR")}
@@ -96,3 +109,17 @@ def test_importing_main_module_does_not_run_it() -> None:
 
     assert entry.__name__ == "colorsupport.__main__"
     assert vars(entry)["main"] is main
+
+
+@pytest.mark.parametrize(("minimum", "status"), [("16", 1), ("none", 0)])
+def test_module_check_preserves_exit_status(minimum: str, status: int) -> None:
+    done = subprocess.run(
+        [sys.executable, "-B", "-m", "colorsupport", "--when", "never", "--check", minimum],
+        env={**os.environ, "PYTHONPATH": str(SRC)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == status
+    assert done.stdout == done.stderr == ""

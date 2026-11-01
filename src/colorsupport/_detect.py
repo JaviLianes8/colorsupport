@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Callable, Mapping
-from typing import Any, Literal
+from typing import Literal
 
 from ._conventions import read_override
 from ._level import ColorLevel, Detection
@@ -18,7 +18,7 @@ Terminfo = Callable[[str], int | None]
 
 
 def detect(
-    stream: Any = None,
+    stream: object = None,
     *,
     env: Mapping[str, str] | None = None,
     when: When = "auto",
@@ -38,6 +38,9 @@ def detect(
     the other switches, "never" turns it off, "auto" (the default) reads the environment.
     Detection never raises for a broken or closed stream; an unknown `when` raises
     ValueError.
+
+    >>> detect(env={"FORCE_COLOR": "2"}).level is ColorLevel.ANSI256
+    True
     """
     env = os.environ if env is None else env
     override = read_override(env, when)
@@ -61,7 +64,7 @@ def detect(
 
 
 def level(
-    stream: Any = None,
+    stream: object = None,
     *,
     env: Mapping[str, str] | None = None,
     when: When = "auto",
@@ -70,7 +73,11 @@ def level(
     vt: bool | None = None,
     terminfo: Terminfo | None = None,
 ) -> ColorLevel:
-    """Return the color level of stream; the arguments are those of `detect`."""
+    """Return the color level of stream; arguments and errors are those of `detect`.
+
+    >>> level(env={}, when="never") is ColorLevel.NONE
+    True
+    """
     found = detect(
         stream,
         env=env,
@@ -84,7 +91,7 @@ def level(
 
 
 def supports_color(
-    stream: Any = None,
+    stream: object = None,
     *,
     env: Mapping[str, str] | None = None,
     when: When = "auto",
@@ -93,7 +100,11 @@ def supports_color(
     vt: bool | None = None,
     terminfo: Terminfo | None = None,
 ) -> bool:
-    """Return whether stream can show any color; the arguments are those of `detect`."""
+    """Return whether stream can show color; arguments and errors are those of `detect`.
+
+    >>> supports_color(env={"NO_COLOR": "1"})
+    False
+    """
     found = detect(
         stream,
         env=env,
@@ -107,7 +118,7 @@ def supports_color(
 
 
 def _terminal(
-    stream: Any,
+    stream: object,
     env: Mapping[str, str],
     platform: str | None,
     windows_build: int | None,
@@ -130,9 +141,10 @@ def _terminal(
     return term_level(env, lookup if terminfo is None else terminfo)
 
 
-def _isatty(stream: Any) -> bool:
+def _isatty(stream: object) -> bool:
     # Any failure of a foreign stream object means "not a terminal": detection never raises.
     try:
-        return stream is not None and bool(stream.isatty())
+        method = getattr(stream, "isatty", None)
+        return callable(method) and bool(method())
     except Exception:
         return False

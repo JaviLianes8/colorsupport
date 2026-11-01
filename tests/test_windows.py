@@ -125,10 +125,18 @@ import json, sys
 sys.path.insert(0, sys.argv[1])
 from colorsupport import detect, enable_vt
 from colorsupport._windows import vt_enabled
-import ctypes, msvcrt
-console = open("CONOUT$", "w")
+import ctypes, msvcrt, os
+from ctypes import wintypes
+kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel.CreateConsoleScreenBuffer.restype = wintypes.HANDLE
+kernel.CreateConsoleScreenBuffer.argtypes = [wintypes.DWORD, wintypes.DWORD,
+    ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p]
+kernel.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+handle = kernel.CreateConsoleScreenBuffer(0xC0000000, 3, None, 1, None)
+assert handle != ctypes.c_void_p(-1).value, ctypes.get_last_error()
+console = os.fdopen(msvcrt.open_osfhandle(handle, os.O_TEXT), "w")
 # Start from a console with processed output and wrapping but no VT processing.
-ctypes.windll.kernel32.SetConsoleMode(msvcrt.get_osfhandle(console.fileno()), 0x0003)
+assert kernel.SetConsoleMode(handle, 0x0003)
 before = vt_enabled(console)
 off = detect(console, env={}).level
 turned = enable_vt(console)

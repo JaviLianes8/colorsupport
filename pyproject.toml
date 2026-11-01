@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "colorsupport"
-version = "0.1.0"
+version = "1.0.0"
 description = "Detect how much color a terminal stream can show (none, 16, 256, truecolor) and why, following NO_COLOR, FORCE_COLOR and CLICOLOR, with Windows console and terminfo support, zero dependencies, fully typed"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Javier Lianes", email = "javier@lianes8studio.com" }]
 keywords = ["color", "colour", "terminal", "ansi", "no-color", "force-color", "clicolor", "truecolor", "256-color", "tty", "isatty", "supports-color", "terminfo", "windows-console", "cli"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
@@ -31,11 +31,11 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "pytest", "build", "twine"]
+dev = ["ruff", "mypy", "pytest", "pytest-timeout", "build", "twine"]
 
 [project.urls]
 Homepage = "https://lianes8studio.com"
-Repository = "https://github.com/JaviLianes8/colorsupport"
+Source = "https://github.com/JaviLianes8/colorsupport"
 Issues = "https://github.com/JaviLianes8/colorsupport/issues"
 Changelog = "https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md"
 LinkedIn = "https://www.linkedin.com/in/jlianes/"
@@ -49,6 +49,7 @@ colorsupport = "colorsupport._cli:main"
 exclude = [
     ".github",
     "IMPROVEMENTS-round*.md",
+    "CERT-1.0-REPORT.md",
     "tests/upstream/*.md",
     "tests/upstream/*.js",
     "tests/upstream/*.txt",
@@ -73,3 +74,4 @@ strict = true
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+timeout = 300

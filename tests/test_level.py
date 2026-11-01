@@ -10,6 +10,25 @@ def test_levels_are_ordered_numbers() -> None:
     assert ColorLevel.NONE < ColorLevel.BASIC < ColorLevel.ANSI256 < ColorLevel.TRUECOLOR
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["SENSITIVE_MARKER", "SENSITIVE_MARKER" + "x" * 1_000_000, 10**4000],
+    ids=["secret", "long-text", "huge-integer"],
+)
+def test_constructor_errors_are_bounded_and_redacted(value: object) -> None:
+    with pytest.raises(ValueError) as raised:
+        ColorLevel(value)  # type: ignore[arg-type]
+    message = str(raised.value)
+    assert "SENSITIVE_MARKER" not in message
+    assert len(message) < 100
+
+
+def test_constructor_preserves_valid_enum_values() -> None:
+    for member in ColorLevel:
+        assert ColorLevel(member) is member
+        assert ColorLevel(member.value) is member
+
+
 def test_colors_counts_each_level() -> None:
     assert [member.colors for member in ColorLevel] == [0, 16, 256, 16_777_216]
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -36,7 +37,16 @@ def mypy_output(tmp_path_factory: pytest.TempPathFactory) -> str:
     config = folder / "mypy.ini"
     config.write_text(f"[mypy]\nmypy_path = {SRC.as_posix()}\n", encoding="utf-8")
     cache = str(folder / "cache")
-    args = ["--strict", "--config-file", str(config), "--cache-dir", cache, str(target)]
+    args = [
+        "--strict",
+        "--python-executable",
+        sys.executable,
+        "--config-file",
+        str(config),
+        "--cache-dir",
+        cache,
+        str(target),
+    ]
     try:
         from mypy import api
     except ImportError:
