@@ -109,3 +109,17 @@ def test_importing_main_module_does_not_run_it() -> None:
 
     assert entry.__name__ == "colorsupport.__main__"
     assert vars(entry)["main"] is main
+
+
+@pytest.mark.parametrize(("minimum", "status"), [("16", 1), ("none", 0)])
+def test_module_check_preserves_exit_status(minimum: str, status: int) -> None:
+    done = subprocess.run(
+        [sys.executable, "-B", "-m", "colorsupport", "--when", "never", "--check", minimum],
+        env={**os.environ, "PYTHONPATH": str(SRC)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == status
+    assert done.stdout == done.stderr == ""

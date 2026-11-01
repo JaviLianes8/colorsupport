@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The format follows
 - Stabilize the seven public names, detection precedence, level labels and CLI options
   from 0.1.0. Python 3.10 through 3.14; no runtime dependencies.
 - Type stream arguments as `object` instead of `Any`, retaining arbitrary stream support.
+- Windows native console detection now requires both processed output and virtual
+  terminal processing. `enable_vt` enables both while preserving all existing mode flags,
+  so consoles with processed output disabled no longer report success with literal escapes.
+- Invalid `ColorLevel(value)` construction raises `ValueError` with a bounded, redacted
+  message, including secret-like text and huge integers; valid enum construction is unchanged.
 - Invalid `when` and unknown color-level messages no longer repeat the supplied value;
   non-string level type names are limited to 40 characters.
 - Invalid command-line usage prints bounded option guidance without repeating arguments;

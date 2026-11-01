@@ -10,8 +10,10 @@ from typing import Any
 from ._level import ColorLevel
 from ._terminal import shown_number
 
-# ENABLE_VIRTUAL_TERMINAL_PROCESSING, from the console mode flags in Microsoft's console docs.
+# Microsoft requires processed output together with virtual terminal processing.
 VT_PROCESSING = 0x0004
+PROCESSED_OUTPUT = 0x0001
+_REQUIRED_OUTPUT = PROCESSED_OUTPUT | VT_PROCESSING
 # supports-color: build 10586 is the first with 256 colors, 14931 the first with truecolor.
 BUILD_256 = 10586
 BUILD_TRUECOLOR = 14931
@@ -68,7 +70,7 @@ def console_mode(stream: object) -> int | None:
 def vt_enabled(stream: object) -> bool | None:
     """Whether a Windows console processes escape sequences; None if not a console."""
     mode = console_mode(stream)
-    return None if mode is None else bool(mode & VT_PROCESSING)
+    return None if mode is None else mode & _REQUIRED_OUTPUT == _REQUIRED_OUTPUT
 
 
 def enable_vt(stream: object = None) -> bool:
@@ -78,6 +80,7 @@ def enable_vt(stream: object = None) -> bool:
     now processes escape sequences, False otherwise: the stream is not a console (a pipe, a
     file, a pty), the console is too old to accept the mode, or this is not Windows, where
     terminals need no switch. Detection never calls this; it only reads the mode.
+    Enables processed output and virtual terminal processing, preserving all other flags.
 
     >>> enable_vt(object())
     False
@@ -86,10 +89,10 @@ def enable_vt(stream: object = None) -> bool:
     mode = console_mode(stream)
     if mode is None:
         return False
-    if mode & VT_PROCESSING:
+    if mode & _REQUIRED_OUTPUT == _REQUIRED_OUTPUT:
         return True
     # Consoles older than Windows 10 refuse the flag, so success means it is on.
-    return bool(_kernel32().SetConsoleMode(_handle(stream), mode | VT_PROCESSING))
+    return bool(_kernel32().SetConsoleMode(_handle(stream), mode | _REQUIRED_OUTPUT))
 
 
 def windows_build() -> int:

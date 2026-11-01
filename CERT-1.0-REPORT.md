@@ -9,6 +9,7 @@ Progress (2026-11-01):
 - [x] Build and inspect distributions; installed-wheel e2e and PyPI upgrade
 - [x] Run the installed-wheel suite on all twelve available supported Python builds
 - [x] Complete 19-mutation round; gates and installed-wheel e2e pass
+- [x] Address all 13 QA round 1 findings; six additional mutations killed
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -53,11 +54,46 @@ and million-character invalid values retain bounded errors and reasons.
 The Windows integration test creates a hidden console screen buffer through the
 Windows API and verifies real mode changes without opening named device files.
 
-## Pending independent stages
+## QA round 1 (2026-11-01)
 
-No certification-stage independent reviewer or QA lens has run yet. Earlier
-improvement-round reviews do not constitute 1.0.0 verdicts. Items 16 and 19 remain
-pending. Merge and publication remain pending with the maintainer.
+Reviewed baseline: `463831bcf4c05d55c07d548c43c64ef77aacb985`.
+Fix commit: `fix certification QA round one findings`, the commit containing this
+section, directly following that baseline. All 13 supplied findings are addressed.
+Independent re-verification and the final item 16/19 verdicts remain pending.
+Merge and publication remain pending with the maintainer.
+
+| Finding | Change and verification |
+| --- | --- |
+| A-001 | GUIDE explains that terminfo also establishes unknown names' levels; custom-terminal with 256 colors executed successfully. |
+| A-002 | README distinguishes the eleven pinned files from unpinned ConEmu background documentation; all eleven fetched and verified. |
+| A-003, B-02 | README explicitly records both CLICOLOR deviations; existing 0.1.0 behavior is retained. Executed reference gives True for 0 and 1 on a terminal, library gives False. |
+| B-01 | Detection requires both output-processing flags; enable_vt sets both. Private-console rendering covers modes 0, 1, 3, 4, 5 and 7 and consumes escape sequences. |
+| B-03 | README distinguishes v10.2.2's parseInt behavior from pinned revision 4963567. Executing both gives level 2 and none respectively for spaced FORCE_COLOR. |
+| C-001 | ColorLevel constructor errors omit invalid values. Secret-like text, million-character text and a 4001-digit integer have bounded ValueError messages; valid members remain unchanged. |
+| E01 / M27 | Full console modes and repeated calls are asserted by test_real_console_requires_both_flags_and_preserves_modes; flag-dropping mutation killed. |
+| E02 / M32 | test_enable_vt_defaults_to_current_stdout checks distinct current stdout, stderr and explicit streams; wrong-default mutation killed. |
+| E03 / M37 | test_zero_colors_is_distinct_from_missing checks 0, absent and cancelled public lookup results; zero-dropping mutation killed. |
+| E04 / M38 | test_entry_size_limit_is_inclusive checks 32767, 32768 and 32769 bytes; boundary mutation killed. |
+| E05 / M41 | A readable colon target and an open spy prove unsafe names are rejected before opening; colon-removal mutation killed. |
+| E06 / M46 | test_module_check_preserves_exit_status exercises both module subprocess exit statuses with empty output; exit-dropping mutation killed. |
+
+Behavior tests were added before production edits: the focused baseline run had
+4 failures (three constructor diagnostics and Windows processing), then 58 passed
+after the fixes. Both behavior changes are recorded in CHANGELOG. Coverage findings
+needed no production changes; all six injected defects fail the new contracts in
+isolated copies. M27 uses the updated two-flag mask for the same flag-dropping defect.
+
+Validation: ruff format --check ., ruff check ., mypy --strict src and additionally
+mypy --strict src tests all exit 0. Full pytest with freshly fetched references and
+COLORSUPPORT_E2E=1: **287 passed, 1 skipped** (POSIX FIFO on Windows), including fresh
+wheel installation, actual PyPI 0.1.0 upgrade, examples and Node.js comparisons.
+Per-test timeout: 300 seconds. Evidence is retained under
+`C:/lianes8-build/codex-pylib/scratch/colorsupport-cert/fix-r1/`: red.log, full.log,
+full.xml, mutations.json, M27/M32/M37/M38/M41/M46.log and executable doc_checks.py.
+
+### Disputed findings
+
+None.
 
 ## Packaging and upgrade (items 8, 11 to 14)
 

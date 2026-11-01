@@ -47,11 +47,15 @@ Empty override variables count as unset; CI markers and `COLORTERM` use presence
 
 Detection is a heuristic: it does not send terminal queries, render colors, translate
 escape sequences or inspect the host's command-line arguments. `BASIC` is the ANSI
-color tier even when a terminfo entry reports eight colors. Terminfo only raises a
-known name's level. The README records disagreements among the reference sources.
+color tier even when a terminfo entry reports eight colors. Terminfo can establish the
+level for an otherwise unrecognized terminal name, and can raise but never lower a
+level inferred from a known name. For example, `TERM=custom-terminal` with a terminfo
+count of 256 gives ANSI256 on a terminal stream. The README records source disagreements.
 
 `enable_vt(stream=None)` returns True only when Windows console processing is enabled
 already or successfully enabled by this call. Detection never changes console mode.
+Both processed output and virtual terminal processing must be enabled; the function
+sets both flags while preserving every existing console-mode flag.
 Non-console objects return False. This function does not restore the old mode.
 
 `terminfo_colors(term, env=None)` returns the first readable entry's nonnegative
@@ -67,6 +71,7 @@ a slash, backslash, colon or NUL are refused. The database folders are trusted i
 
 | Call | Error |
 | --- | --- |
+| `ColorLevel(value)` with an unknown value | `ValueError`, bounded message without input |
 | `ColorLevel.parse` with unknown text | `ValueError`, choices listed without input |
 | `ColorLevel.parse` with non-text | `TypeError`, no value echoed |
 | `detect`, `level`, `supports_color` with unknown `when` | `ValueError`, choices listed |
@@ -90,8 +95,9 @@ Usage errors give bounded guidance without echoing the supplied arguments.
 
 ## Upgrade from 0.1.0
 
-Install 1.0.0 with `python -m pip install --upgrade colorsupport`. Normal detection,
-constructor behavior, enum values and command-line output are unchanged. Invalid
+Install 1.0.0 with `python -m pip install --upgrade colorsupport`. Enum values, valid
+constructor behavior and command-line output are unchanged. Windows native console
+detection now requires both processing flags, and `enable_vt` sets both. Invalid
 value messages omit the input, non-string terminfo names consistently raise TypeError,
 and huge numeric diagnostics are bounded. CLI usage errors now omit arguments.
 Stream annotations now use `object`.

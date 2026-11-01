@@ -13,6 +13,7 @@ class ColorLevel(enum.IntEnum):
     """How much color a stream can show, from none up to 24-bit truecolor.
 
     The levels compare as numbers, so `level >= ColorLevel.ANSI256` reads naturally.
+    Constructing an unknown value raises ValueError without including the input.
 
     >>> ColorLevel.TRUECOLOR > ColorLevel.ANSI256
     True
@@ -22,6 +23,10 @@ class ColorLevel(enum.IntEnum):
     BASIC = 1
     ANSI256 = 2
     TRUECOLOR = 3
+
+    @classmethod
+    def _missing_(cls, value: object) -> ColorLevel:
+        raise ValueError("unknown color level; expected 0, 1, 2 or 3")
 
     @property
     def colors(self) -> int:
