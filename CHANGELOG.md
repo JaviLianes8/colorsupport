@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
   so consoles with processed output disabled no longer report success with literal escapes.
 - Invalid `ColorLevel(value)` construction raises `ValueError` with a bounded, redacted
   message, including secret-like text and huge integers; valid enum construction is unchanged.
+- Reject unknown constructor values before enum fallback formatting, without calling their
+  `repr` or `str`, including hostile subclasses and integers beyond the text conversion limit.
+  Failed value comparisons also produce a redacted `ValueError` without exposing the
+  comparison error in exception chains.
 - Invalid `when` and unknown color-level messages no longer repeat the supplied value;
   non-string level type names are limited to 40 characters.
 - Invalid command-line usage prints bounded option guidance without repeating arguments;

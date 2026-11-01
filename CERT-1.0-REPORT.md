@@ -10,6 +10,7 @@ Progress (2026-11-01):
 - [x] Run the installed-wheel suite on all twelve available supported Python builds
 - [x] Complete 19-mutation round; gates and installed-wheel e2e pass
 - [x] Address all 13 QA round 1 findings; six additional mutations killed
+- [x] Address all five QA round 2 findings; three reported mutations and a context variant killed
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -95,6 +96,50 @@ full.xml, mutations.json, M27/M32/M37/M38/M41/M46.log and executable doc_checks.
 
 None.
 
+## QA round 2 (2026-11-01)
+
+Reviewed baseline: `166ea8defed6a0a126af41709865b1c3c8a26064`.
+Fix commit: `fix certification QA round two findings`, the commit containing this
+section, directly following that baseline. All five supplied findings are addressed.
+Independent re-verification and the final item 16/19 verdicts remain pending.
+
+| Finding | Change and verification |
+| --- | --- |
+| A-004 | README distinguishes upstream's forced minimum from this library's exact level. Freshly fetched supports-color v10.2.2 returns 3 on native Windows with spaced FORCE_COLOR=2 and a pipe; colorsupport returns 2. |
+| C-002 | Constructor value lookup bypasses Enum's fallback formatting. Hostile string/integer representations are never called; a 10001-digit integer receives the bounded ValueError. Member identity, bool, float, complex, Decimal and Fraction construction remain valid. |
+| E07 / N14 | test_failed_mode_update_returns_false asserts False after a zero SetConsoleMode result and checks the requested mode; the reported mutation fails. |
+| E08 / N15 | Stub and private-console contracts preserve output flags 0x0008 and 0x0010 separately and combined. The reported truncation mutation fails both contracts. |
+| E09 / N20 | test_constructor_exception_chain_is_redacted checks formatted tracebacks and cause/context messages. The reported cause mutation and an unsuppressed-context variant both fail. |
+
+Constructor contracts preceded the production fix: the focused baseline had three
+failures and 15 passes. The final constructor tests against an isolated baseline copy
+have four failures and nine passes, including the added hostile-comparison case.
+Rejected values now raise a constant ValueError before enum fallback formatting;
+comparison failures cannot expose their messages through an exception chain.
+CHANGELOG records these behavior changes. Windows production behavior is unchanged;
+E07, E08 and E09 close test gaps in already-correct behavior.
+
+| Mutation | Catching contract |
+| --- | --- |
+| N14: ignore failed console write | test_failed_mode_update_returns_false |
+| N15: truncate existing mode to three bits | test_enabling_preserves_extended_output_flags; test_real_console_requires_both_flags_and_preserves_modes |
+| N20: expose rejected value through cause | test_constructor_exception_chain_is_redacted |
+| N20 context variant: expose value through context | test_constructor_exception_chain_is_redacted |
+
+Validation: ruff format --check ., ruff check ., mypy --strict src and additionally
+mypy --strict src tests exit 0.
+Full pytest with all eleven freshly fetched references and COLORSUPPORT_E2E=1:
+**304 passed, 1 skipped** (POSIX FIFO on Windows), including fresh installation,
+PyPI 0.1.0 upgrade, real Windows console checks and Node.js comparisons.
+Per-test timeout: 300 seconds. Evidence is retained under
+`C:/lianes8-build/codex-pylib/scratch/colorsupport-cert/fix-r2/`: red-clean.log,
+baseline-final.log, full.log, full.xml, mutations.json, N14/N15/N20/N20-context.log,
+doc_check.py and reference-manifest.json.
+
+### Disputed findings
+
+None.
+
 ## Packaging and upgrade (items 8, 11 to 14)
 
 The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
@@ -147,15 +192,15 @@ rerun after creating the test scratch parent. No survivor remains.
 ## Gates (item 15)
 
 Each command exits zero independently: ruff format --check ., ruff check .,
-mypy --strict src, mypy --strict src tests and pytest. The complete run with
-COLORSUPPORT_E2E=1 and fetched sources has 266 passed, one skipped (POSIX FIFO on
-Windows). The default suite has 264 passed, three skipped (the two opt-in e2e cases
+mypy --strict src, mypy --strict src tests and pytest. The latest QA round 2 run with
+COLORSUPPORT_E2E=1 and fetched sources has 304 passed, one skipped (POSIX FIFO on
+Windows). The initial default suite had 264 passed, three skipped (the two opt-in e2e cases
 and POSIX FIFO). Every public docstring example and every README/GUIDE Python
 example executes in the suite. All tests use a 300-second timeout.
 
 ## Interpreter matrix (item 10)
 
-Every distinct working CPython build found on this machine ran the sdist's tests
+During initial preparation, every distinct working CPython build found on this machine ran the sdist's tests
 against the installed wheel, with the source package excluded from the extracted
 sdist so it could not shadow the install. Each result is 264 passed, three skipped
 (the two opt-in wheel-building cases and POSIX FIFO). The wheel's CLI and real
@@ -199,7 +244,7 @@ Stale launcher entries pointing at removed interpreter folders were not runnable
 | 10 | PASS | Twelve working Python builds, all supported minor versions |
 | 11, 12 | PASS | README badge/links, GUIDE, dated CHANGELOG and twine checks |
 | 13, 14 | PASS | Stable metadata, no runtime dependencies, archives inspected |
-| 15 | PASS | Four gates exit zero independently; 266 tests with e2e enabled |
+| 15 | PASS | Four gates exit zero independently; 304 tests with e2e enabled in QA round 2 |
 | 16 | Pending | Independent reviewer |
 | 17 | Pending | Merge and publication |
 | 18 | PASS | All 19 deliberate mutations killed |

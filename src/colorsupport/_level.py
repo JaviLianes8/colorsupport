@@ -9,7 +9,22 @@ _COLORS = (0, 16, 256, 16_777_216)
 _LABELS = ("none", "16", "256", "truecolor")
 
 
-class ColorLevel(enum.IntEnum):
+class _ColorLevelType(enum.EnumMeta):
+    # This populated enum supports value lookup, not EnumMeta's enum-creation overload.
+    def __call__(cls, value: object) -> ColorLevel:  # type: ignore[override]
+        # Enum's missing-value path formats repr(value), even when _missing_ raises.
+        # Compare the four values directly to preserve numeric equivalence safely.
+        member: ColorLevel
+        try:
+            for member in cls:
+                if member.value == value:
+                    return member
+        except Exception:
+            pass
+        raise ValueError("unknown color level; expected 0, 1, 2 or 3") from None
+
+
+class ColorLevel(enum.IntEnum, metaclass=_ColorLevelType):
     """How much color a stream can show, from none up to 24-bit truecolor.
 
     The levels compare as numbers, so `level >= ColorLevel.ANSI256` reads naturally.
@@ -23,10 +38,6 @@ class ColorLevel(enum.IntEnum):
     BASIC = 1
     ANSI256 = 2
     TRUECOLOR = 3
-
-    @classmethod
-    def _missing_(cls, value: object) -> ColorLevel:
-        raise ValueError("unknown color level; expected 0, 1, 2 or 3")
 
     @property
     def colors(self) -> int:

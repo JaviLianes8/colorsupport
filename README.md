@@ -122,7 +122,8 @@ When color was turned on in steps 1, 3 or 4, the result is never below 16.
   overridden above, and positive values such as `1` do not establish color support:
   an otherwise unidentified terminal still gives none. This preserves the 0.1.0 policy.
 - `supports-color` v10.2.2 parses numeric `FORCE_COLOR` with `Number.parseInt`, so ` 2 `
-  gives level 2 there as it does here. The manifest's later revision `4963567` requires
+  sets a forced minimum of 2; its final level can be higher (3 on modern Windows).
+  Here it returns exactly level 2. The manifest's later revision `4963567` requires
   digits only and ignores ` 2 `. Both ignore `FALSE`; here `false` ignores case and
   surrounding spaces. Other non-empty, nonnumeric values turn color on here as the
   FORCE_COLOR page requests.

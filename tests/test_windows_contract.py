@@ -6,12 +6,36 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 from colorsupport import enable_vt
 
 SRC = Path(__file__).resolve().parents[1] / "src"
+
+
+def test_failed_mode_update_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    kernel = Mock()
+    kernel.SetConsoleMode.return_value = 0
+    monkeypatch.setattr("colorsupport._windows.console_mode", lambda stream: 4)
+    monkeypatch.setattr("colorsupport._windows._handle", lambda stream: 123)
+    monkeypatch.setattr("colorsupport._windows._kernel32", lambda: kernel)
+    assert enable_vt(object()) is False
+    kernel.SetConsoleMode.assert_called_once_with(123, 5)
+
+
+@pytest.mark.parametrize("flags", [0x0008, 0x0010, 0x0018])
+def test_enabling_preserves_extended_output_flags(
+    monkeypatch: pytest.MonkeyPatch, flags: int
+) -> None:
+    kernel = Mock()
+    kernel.SetConsoleMode.return_value = 1
+    monkeypatch.setattr("colorsupport._windows.console_mode", lambda stream: flags | 3)
+    monkeypatch.setattr("colorsupport._windows._handle", lambda stream: 123)
+    monkeypatch.setattr("colorsupport._windows._kernel32", lambda: kernel)
+    assert enable_vt(object()) is True
+    kernel.SetConsoleMode.assert_called_once_with(123, flags | 7)
 
 
 def test_enable_vt_defaults_to_current_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -50,7 +74,7 @@ h = k.CreateConsoleScreenBuffer(0xC0000000, 3, None, 1, None)
 assert h != ctypes.c_void_p(-1).value, ctypes.get_last_error()
 rows = []
 with os.fdopen(msvcrt.open_osfhandle(h, os.O_TEXT), "w") as console:
-    for initial in (0, 1, 3, 4, 5, 7):
+    for initial in (0, 1, 3, 4, 5, 7, 11, 19, 27):
         assert k.SetConsoleMode(h, initial)
         before = int(detect(console, env={}, windows_build=14931).level)
         enabled = enable_vt(console)
