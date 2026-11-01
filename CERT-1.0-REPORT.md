@@ -12,6 +12,7 @@ Progress (2026-11-01):
 - [x] Address all 13 QA round 1 findings; six additional mutations killed
 - [x] Address all five QA round 2 findings; three reported mutations and a context variant killed
 - [x] Address all four QA round 3 findings; all four reported constructor mutations killed
+- [x] Address all five QA round 4 findings; all five reported constructor mutations killed
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -174,6 +175,40 @@ mutations.json, R09/R10/R12/R13-before/after.log and .xml, full.log and full.xml
 
 None.
 
+## QA round 4 (2026-11-01)
+
+Reviewed baseline: `d236633c7d46356e6df3805f183c4bda7e4243ca`.
+Fix commit: `close constructor contract gaps for certification round four`, the
+commit containing this section, directly following that baseline. All five supplied
+findings are addressed. Independent re-verification and final verdicts remain pending.
+
+| Finding | Change and verification |
+| --- | --- |
+| E14 / S01 | test_constructor_rejects_exact_fractions_that_round_to_levels rejects nonintegral Decimal and Fraction values whose float conversion equals each valid level, including underflow to zero. The exact mutation fails eight cases. |
+| E15 / S04 | test_constructor_accepts_nonunit_truthy_equality checks an unhashable integer subclass returning 2 for equality and 0 otherwise; all four enum singleton identities are preserved. The exact mutation fails four cases. |
+| E16 / S05 | test_constructor_rejects_numeric_text_accepted_by_parse rejects strings 0 through 3 in the constructor and confirms that parse accepts them. The exact mutation fails four cases. |
+| E17 / S06 | test_constructor_redacts_equality_and_truth_conversion_errors adds LookupError and a custom Exception subclass, directly raised and chained. It asserts the exact constant ValueError, absent cause/context and bounded, redacted traceback. The exact mutation fails eight cases. |
+| E18 / S10 | The same contract exercises equality results whose __bool__ raises RuntimeError, LookupError or a custom exception, directly or with a cause. The exact mutation fails six cases. |
+
+These are missing-contract findings: unchanged production code passes all 68
+constructor cases, including 28 new cases. No production behavior or public API
+change was necessary. CHANGELOG records the expanded coverage. Each exact reported
+mutation passes all 40 earlier constructor cases in an isolated scratch copy, then
+fails with the new contracts. Failures are behavioral assertions with no collection
+errors. No production file was mutated in the working repository.
+
+Validation: ruff format --check ., ruff check ., mypy --strict src and additionally
+mypy --strict src tests exit 0. Full pytest with all eleven freshly fetched references
+and COLORSUPPORT_E2E=1: **359 passed, 1 skipped** (POSIX FIFO on Windows), including
+fresh installation, PyPI 0.1.0 upgrade, real Windows console checks and Node.js
+comparisons. Per-test timeout: 300 seconds. Evidence is retained under
+`C:/lianes8-build/codex-pylib/scratch/colorsupport-cert/fix-r4/`: check_mutations.py,
+mutations.json, S01/S04/S05/S06/S10-before/after.log and .xml, full.log and full.xml.
+
+### Disputed findings
+
+None.
+
 ## Packaging and upgrade (items 8, 11 to 14)
 
 The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
@@ -226,8 +261,8 @@ rerun after creating the test scratch parent. No survivor remains.
 ## Gates (item 15)
 
 Each command exits zero independently: ruff format --check ., ruff check .,
-mypy --strict src, mypy --strict src tests and pytest. The latest QA round 3 run with
-COLORSUPPORT_E2E=1 and fetched sources has 331 passed, one skipped (POSIX FIFO on
+mypy --strict src, mypy --strict src tests and pytest. The latest QA round 4 run with
+COLORSUPPORT_E2E=1 and fetched sources has 359 passed, one skipped (POSIX FIFO on
 Windows). The initial default suite had 264 passed, three skipped (the two opt-in e2e cases
 and POSIX FIFO). Every public docstring example and every README/GUIDE Python
 example executes in the suite. All tests use a 300-second timeout.
@@ -278,7 +313,7 @@ Stale launcher entries pointing at removed interpreter folders were not runnable
 | 10 | PASS | Twelve working Python builds, all supported minor versions |
 | 11, 12 | PASS | README badge/links, GUIDE, dated CHANGELOG and twine checks |
 | 13, 14 | PASS | Stable metadata, no runtime dependencies, archives inspected |
-| 15 | PASS | Four gates exit zero independently; 331 tests with e2e enabled in QA round 3 |
+| 15 | PASS | Four gates exit zero independently; 359 tests with e2e enabled in QA round 4 |
 | 16 | Pending | Independent reviewer |
 | 17 | Pending | Merge and publication |
 | 18 | PASS | All 19 deliberate mutations killed |

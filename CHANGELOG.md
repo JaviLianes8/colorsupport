@@ -33,6 +33,9 @@ All notable changes to this project are documented here. The format follows
 - Extend constructor contracts for negative and fractional numbers, non-real complex
   values, truthy integer-subclass equality and comparison exception redaction.
   Constructor behavior and the public API are unchanged.
+- Extend constructor contracts for exact Decimal/Fraction precision, non-unit truthy
+  equality results, numeric text rejection, custom comparison errors and failures
+  during equality-result truth conversion. Production behavior remains unchanged.
 
 ## [0.1.0]
 
