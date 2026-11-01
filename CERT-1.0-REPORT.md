@@ -11,6 +11,7 @@ Progress (2026-11-01):
 - [x] Complete 19-mutation round; gates and installed-wheel e2e pass
 - [x] Address all 13 QA round 1 findings; six additional mutations killed
 - [x] Address all five QA round 2 findings; three reported mutations and a context variant killed
+- [x] Address all four QA round 3 findings; all four reported constructor mutations killed
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -140,6 +141,39 @@ doc_check.py and reference-manifest.json.
 
 None.
 
+## QA round 3 (2026-11-01)
+
+Reviewed baseline: `e54a6bc6c394e735e671a0acf8cbb509aeff8a8c`.
+Fix commit: `close constructor contract gaps for certification round three`, the
+commit containing this section, directly following that baseline. All four supplied
+findings are addressed. Independent re-verification and final verdicts remain pending.
+
+| Finding | Change and verification |
+| --- | --- |
+| E10 / R09 | Reject negative integers, negative floats and non-real complex values with magnitudes matching valid levels. test_constructor_rejects_negative_and_nonreal_numbers catches all nine cases. |
+| E11 / R10 | Reject fractional floats that round to each of the four valid levels. test_constructor_rejects_fractional_numbers catches all four cases. |
+| E12 / R12 | Accept integer subclasses whose equality returns integer 0 or 1. test_constructor_accepts_truthy_integer_equality checks all four enum singletons and catches all four cases. |
+| E13 / R13 | Require a constant ValueError with no cause or context for RuntimeError, ValueError, TypeError, AssertionError and OverflowError comparisons, both direct and chained. test_constructor_redacts_comparison_errors catches eight cases under the reported mutation. |
+
+These are missing-contract findings: production code already satisfies the promises.
+No production behavior or public API changes were necessary. CHANGELOG records the
+expanded coverage. The constructor suite passes all 40 cases on unchanged production
+code. Each exact reported mutation passes all 13 original constructor cases in an
+isolated scratch copy, then fails with the new tests: R09 has 9 failures, R10 has 4,
+R12 has 4 and R13 has 8. No production file was mutated in the working repository.
+
+Validation: ruff format --check ., ruff check ., mypy --strict src and additionally
+mypy --strict src tests exit 0. Full pytest with all eleven freshly fetched references
+and COLORSUPPORT_E2E=1: **331 passed, 1 skipped** (POSIX FIFO on Windows), including
+fresh installation, PyPI 0.1.0 upgrade, real Windows console checks and Node.js
+comparisons. Per-test timeout: 300 seconds. Evidence is retained under
+`C:/lianes8-build/codex-pylib/scratch/colorsupport-cert/fix-r3/`: check_mutations.py,
+mutations.json, R09/R10/R12/R13-before/after.log and .xml, full.log and full.xml.
+
+### Disputed findings
+
+None.
+
 ## Packaging and upgrade (items 8, 11 to 14)
 
 The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
@@ -192,8 +226,8 @@ rerun after creating the test scratch parent. No survivor remains.
 ## Gates (item 15)
 
 Each command exits zero independently: ruff format --check ., ruff check .,
-mypy --strict src, mypy --strict src tests and pytest. The latest QA round 2 run with
-COLORSUPPORT_E2E=1 and fetched sources has 304 passed, one skipped (POSIX FIFO on
+mypy --strict src, mypy --strict src tests and pytest. The latest QA round 3 run with
+COLORSUPPORT_E2E=1 and fetched sources has 331 passed, one skipped (POSIX FIFO on
 Windows). The initial default suite had 264 passed, three skipped (the two opt-in e2e cases
 and POSIX FIFO). Every public docstring example and every README/GUIDE Python
 example executes in the suite. All tests use a 300-second timeout.
@@ -244,7 +278,7 @@ Stale launcher entries pointing at removed interpreter folders were not runnable
 | 10 | PASS | Twelve working Python builds, all supported minor versions |
 | 11, 12 | PASS | README badge/links, GUIDE, dated CHANGELOG and twine checks |
 | 13, 14 | PASS | Stable metadata, no runtime dependencies, archives inspected |
-| 15 | PASS | Four gates exit zero independently; 304 tests with e2e enabled in QA round 2 |
+| 15 | PASS | Four gates exit zero independently; 331 tests with e2e enabled in QA round 3 |
 | 16 | Pending | Independent reviewer |
 | 17 | Pending | Merge and publication |
 | 18 | PASS | All 19 deliberate mutations killed |

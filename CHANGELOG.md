@@ -30,6 +30,9 @@ All notable changes to this project are documented here. The format follows
   `a large integer` in reasons, avoiding huge messages and integer conversion failures.
 - Add runnable public docstrings, the API guide, seeded robustness tests, reference
   implementation comparisons, installed-wheel upgrade tests and release contracts.
+- Extend constructor contracts for negative and fractional numbers, non-real complex
+  values, truthy integer-subclass equality and comparison exception redaction.
+  Constructor behavior and the public API are unchanged.
 
 ## [0.1.0]
 

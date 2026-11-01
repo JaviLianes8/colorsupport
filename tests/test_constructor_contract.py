@@ -38,6 +38,13 @@ class SecretComparison:
         raise RuntimeError("SENSITIVE_MARKER")
 
 
+class TruthyInteger(int):
+    def __eq__(self, other: object) -> int:  # type: ignore[override]
+        return int(super().__eq__(other))
+
+    __hash__ = int.__hash__
+
+
 @pytest.mark.parametrize(
     "value",
     [SecretText("invalid"), SecretInteger(4), 10**10000],
@@ -77,3 +84,47 @@ def test_constructor_preserves_numeric_equivalence(value: object, expected: int)
 
 def test_constructor_preserves_valid_hostile_integer() -> None:
     assert ColorLevel(SecretInteger(2)) is ColorLevel.ANSI256
+
+
+@pytest.mark.parametrize("value", [-1, -2, -3, -1.0, -2.0, -3.0, 1j, 2j, 3j])
+def test_constructor_rejects_negative_and_nonreal_numbers(value: object) -> None:
+    with pytest.raises(ValueError, match=r"^unknown color level; expected 0, 1, 2 or 3$"):
+        ColorLevel(value)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("value", [0.25, 1.25, 1.75, 2.75])
+def test_constructor_rejects_fractional_numbers(value: float) -> None:
+    with pytest.raises(ValueError, match=r"^unknown color level; expected 0, 1, 2 or 3$"):
+        ColorLevel(value)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("expected", list(ColorLevel))
+def test_constructor_accepts_truthy_integer_equality(expected: ColorLevel) -> None:
+    assert ColorLevel(TruthyInteger(expected.value)) is expected
+
+
+@pytest.mark.parametrize(
+    "exception_type", [RuntimeError, ValueError, TypeError, AssertionError, OverflowError]
+)
+@pytest.mark.parametrize("chained", [False, True])
+def test_constructor_redacts_comparison_errors(
+    exception_type: type[Exception], chained: bool
+) -> None:
+    class FailingComparison:
+        def __eq__(self, other: object) -> bool:
+            if chained:
+                try:
+                    raise LookupError("PRIVATE_CAUSE")
+                except LookupError as cause:
+                    raise exception_type("PRIVATE_COMPARISON") from cause
+            raise exception_type("PRIVATE_COMPARISON")
+
+    with pytest.raises(ValueError) as raised:
+        ColorLevel(FailingComparison())  # type: ignore[arg-type]
+    assert type(raised.value) is ValueError
+    assert str(raised.value) == "unknown color level; expected 0, 1, 2 or 3"
+    assert raised.value.__cause__ is None
+    assert raised.value.__context__ is None
+    rendered = "".join(traceback.format_exception(raised.type, raised.value, raised.tb))
+    assert "PRIVATE_COMPARISON" not in rendered
+    assert "PRIVATE_CAUSE" not in rendered
