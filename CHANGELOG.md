@@ -36,6 +36,8 @@ All notable changes to this project are documented here. The format follows
 - Extend constructor contracts for exact Decimal/Fraction precision, non-unit truthy
   equality results, numeric text rejection, custom comparison errors and failures
   during equality-result truth conversion. Production behavior remains unchanged.
+- Cover negative truthy equality results, binary numeric text rejection and None
+  rejection in constructor contracts. Production behavior and the public API are unchanged.
 
 ## [0.1.0]
 

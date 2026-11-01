@@ -16,6 +16,11 @@ class NonUnitEquality(int):
         return 2 if int.__eq__(self, other) else 0
 
 
+class NegativeEquality(int):
+    def __eq__(self, other: object) -> int:  # type: ignore[override]
+        return -2 if int.__eq__(self, other) else 0
+
+
 class ComparisonError(Exception):
     pass
 
@@ -40,6 +45,27 @@ def test_constructor_accepts_nonunit_truthy_equality(expected: ColorLevel) -> No
     value = NonUnitEquality(expected.value)
     assert (value == expected.value) == 2
     assert ColorLevel(value) is expected
+
+
+@pytest.mark.parametrize("expected", list(ColorLevel))
+def test_constructor_accepts_negative_truthy_equality(expected: ColorLevel) -> None:
+    value = NegativeEquality(expected.value)
+    assert (value == expected.value) == -2
+    assert ColorLevel(value) is expected
+
+
+@pytest.mark.parametrize("value", [b"0", b"1", b"2", b"3"])
+@pytest.mark.parametrize("binary_type", [bytes, bytearray])
+def test_constructor_rejects_binary_numeric_text(
+    value: bytes, binary_type: type[bytes] | type[bytearray]
+) -> None:
+    with pytest.raises(ValueError, match=r"^unknown color level; expected 0, 1, 2 or 3$"):
+        ColorLevel(binary_type(value))  # type: ignore[arg-type]
+
+
+def test_constructor_rejects_none() -> None:
+    with pytest.raises(ValueError, match=r"^unknown color level; expected 0, 1, 2 or 3$"):
+        ColorLevel(None)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("expected", list(ColorLevel))

@@ -13,6 +13,7 @@ Progress (2026-11-01):
 - [x] Address all five QA round 2 findings; three reported mutations and a context variant killed
 - [x] Address all four QA round 3 findings; all four reported constructor mutations killed
 - [x] Address all five QA round 4 findings; all five reported constructor mutations killed
+- [x] Address all three QA round 5 findings; all three reported constructor mutations killed
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -209,6 +210,39 @@ mutations.json, S01/S04/S05/S06/S10-before/after.log and .xml, full.log and full
 
 None.
 
+## QA round 5 (2026-11-01)
+
+Reviewed baseline: `030ddbbf4ae6f89ef6ae8c5eb5fe89e794542d9b`.
+Fix commit: `close constructor contract gaps for certification round five`, the
+commit containing this section, directly following that baseline. All three supplied
+findings are addressed. Independent re-verification and final verdicts remain pending.
+
+| Finding | Change and verification |
+| --- | --- |
+| E19 / N01 | test_constructor_accepts_negative_truthy_equality checks an integer subclass returning -2 for equality and 0 otherwise, preserving all four enum singleton identities. The exact mutation fails four cases. |
+| E20 / N02 | test_constructor_rejects_binary_numeric_text requires ValueError for bytes and bytearray containing each numeric level from 0 through 3. The exact mutation fails eight cases. |
+| E21 / N03 | test_constructor_rejects_none requires ValueError for None. The exact mutation fails one case. |
+
+These are missing-contract findings: unchanged production code passes all 81
+constructor cases, including 13 new cases. No production behavior or public API
+change was necessary. CHANGELOG records the expanded coverage. Each exact reported
+mutation passes all 68 earlier constructor cases in an isolated scratch copy, then
+fails with the expanded contracts. All failures are behavioral assertions with no
+collection errors. No production file was mutated in the working repository.
+
+Validation: ruff format --check ., ruff check ., mypy --strict src and additionally
+mypy --strict src tests exit 0. Full pytest with all eleven freshly fetched references
+and COLORSUPPORT_E2E=1: **372 passed, 1 skipped** (POSIX FIFO on Windows), including
+fresh installation, PyPI 0.1.0 upgrade, real Windows console checks and Node.js
+comparisons.
+Per-test timeout: 300 seconds. Evidence is retained under
+`C:/lianes8-build/codex-pylib/scratch/colorsupport-cert/fix-r5/`: check_mutations.py,
+mutations.json, N01/N02/N03-before/after.log and .xml, constructor.xml, full.log and full.xml.
+
+### Disputed findings
+
+None.
+
 ## Packaging and upgrade (items 8, 11 to 14)
 
 The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
@@ -261,8 +295,8 @@ rerun after creating the test scratch parent. No survivor remains.
 ## Gates (item 15)
 
 Each command exits zero independently: ruff format --check ., ruff check .,
-mypy --strict src, mypy --strict src tests and pytest. The latest QA round 4 run with
-COLORSUPPORT_E2E=1 and fetched sources has 359 passed, one skipped (POSIX FIFO on
+mypy --strict src, mypy --strict src tests and pytest. The latest QA round 5 run with
+COLORSUPPORT_E2E=1 and fetched sources has 372 passed, one skipped (POSIX FIFO on
 Windows). The initial default suite had 264 passed, three skipped (the two opt-in e2e cases
 and POSIX FIFO). Every public docstring example and every README/GUIDE Python
 example executes in the suite. All tests use a 300-second timeout.
@@ -313,7 +347,7 @@ Stale launcher entries pointing at removed interpreter folders were not runnable
 | 10 | PASS | Twelve working Python builds, all supported minor versions |
 | 11, 12 | PASS | README badge/links, GUIDE, dated CHANGELOG and twine checks |
 | 13, 14 | PASS | Stable metadata, no runtime dependencies, archives inspected |
-| 15 | PASS | Four gates exit zero independently; 359 tests with e2e enabled in QA round 4 |
+| 15 | PASS | Four gates exit zero independently; 372 tests with e2e enabled in QA round 5 |
 | 16 | Pending | Independent reviewer |
 | 17 | Pending | Merge and publication |
 | 18 | PASS | All 19 deliberate mutations killed |
