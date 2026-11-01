@@ -6,9 +6,19 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from typing import NoReturn
 
 from ._detect import detect
 from ._level import ColorLevel
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        # Parser diagnostics must not echo untrusted command-line values.
+        super().error(
+            "invalid arguments; --when expects auto, always, never; "
+            "--check expected one of none, 16, 256, truecolor; see --help"
+        )
 
 
 def _level(text: str) -> ColorLevel:
@@ -19,7 +29,7 @@ def _level(text: str) -> ColorLevel:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _Parser(
         prog="colorsupport",
         description="Report how much color the terminal on stdout (or stderr) can show.",
     )

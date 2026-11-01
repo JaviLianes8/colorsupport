@@ -82,6 +82,19 @@ def test_bad_level_names_the_choices(capsys: pytest.CaptureFixture[str]) -> None
     assert "expected one of none, 16, 256, truecolor" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("prefix", [[], ["--check"], ["--when"]])
+def test_invalid_arguments_are_not_echoed(
+    prefix: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    secret = "secret-token-" + "x" * 100_000
+    with pytest.raises(SystemExit) as raised:
+        main([*prefix, secret])
+    assert raised.value.code == 2
+    output = capsys.readouterr()
+    assert "secret-token" not in output.err
+    assert len(output.err) < 1000 and output.out == ""
+
+
 def test_runs_as_a_module() -> None:
     command = [sys.executable, "-B", "-m", "colorsupport", "--json"]
     env = {k: v for k, v in os.environ.items() if k not in ("NO_COLOR", "CLICOLOR")}

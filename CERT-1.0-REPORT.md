@@ -6,9 +6,9 @@ Progress (2026-11-01):
 - [x] Fetch all eleven pinned sources and compare 3,000 cases with Node.js reference
 - [x] Add seeded properties, adversarial inputs, README badge, GUIDE and CHANGELOG
 - [x] Initial gates: format, lint, strict types, 261 tests pass (two optional skips)
-- [ ] Build and inspect distributions; installed-wheel e2e and PyPI upgrade
-- [ ] Run every available supported interpreter
-- [ ] Complete mutation round and final gates
+- [x] Build and inspect distributions; installed-wheel e2e and PyPI upgrade
+- [x] Run the installed-wheel suite on all twelve available supported Python builds
+- [x] Complete 19-mutation round; gates and installed-wheel e2e pass
 - [ ] Independent reviewer (item 16) and five QA lenses (item 19)
 - [ ] Merge and publish (item 17)
 
@@ -58,3 +58,113 @@ Windows API and verifies real mode changes without opening named device files.
 No certification-stage independent reviewer or QA lens has run yet. Earlier
 improvement-round reviews do not constitute 1.0.0 verdicts. Items 16 and 19 remain
 pending. Merge and publication remain pending with the maintainer.
+
+## Packaging and upgrade (items 8, 11 to 14)
+
+The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
+2026-11-01. Two isolated e2e runs build wheel and sdist: a fresh installation and
+an in-place upgrade of the actual PyPI 0.1.0. Consumers run from an empty folder
+with isolated imports, exercise all public names and both CLI entry points, and
+check JSON, stderr selection, forced color, threshold exits and invalid usage.
+Across 2,000 seeded environments, normal detection results, reasons and wrappers
+match the installed 0.1.0 exactly. Its pickled Detection loads after upgrading.
+Each changed error behavior and huge-number diagnostic is checked before and after;
+pip check passes after the upgrade. Public stream annotation changes are checked too.
+
+The wheel contains only the package, py.typed and distribution metadata with LICENSE.
+The sdist contains source, tests, docs, scripts and the reference manifest, without
+fetched source copies, caches, scratch files or certification/improvement reports.
+Both distributions pass twine check --strict. Metadata is 1.0.0, Production/Stable,
+Python >=3.10, classifiers through 3.14, MIT, project URLs and no runtime dependencies.
+README uses absolute links, has the certification badge, install and usage examples,
+the problem and a comparison with supports-color and CPython's private check.
+
+## Mutation round (item 18)
+
+Each mutation was applied alone in a separate scratch copy. The contract suite ran
+with -x and a 300-second per-test timeout. All 19 were killed by assertions; setup
+errors during the first attempts at 11 to 15 were not counted, and those cases were
+rerun after creating the test scratch parent. No survivor remains.
+
+| # | Deliberate bug | Test that caught it |
+| --- | --- | --- |
+| 1 | ANSI256 reports 255 colors | test_every_public_docstring_has_a_passing_example |
+| 2 | parse stops stripping whitespace | test_every_public_docstring_has_a_passing_example |
+| 3 | Detection becomes mutable | test_values_are_hashable_and_pickle_round_trip |
+| 4 | Ignore NO_COLOR | test_no_color_turns_color_off_on_a_truecolor_terminal |
+| 5 | Cap FORCE_COLOR at 2 | test_json_output |
+| 6 | CLICOLOR=1 disables instead of 0 | test_clicolor_zero_turns_color_off_unless_forced |
+| 7 | Invert the pipe check | test_huge_integers_keep_exact_comparisons_and_bounded_reasons |
+| 8 | supports_color accepts NONE | test_every_public_docstring_has_a_passing_example |
+| 9 | level always returns BASIC | test_every_public_docstring_has_a_passing_example |
+| 10 | Lower the forced minimum with min | test_huge_integers_keep_exact_comparisons_and_bounded_reasons |
+| 11 | Read legacy numbers big-endian | test_reads_colors_from_the_legacy_format |
+| 12 | Read capability 12 instead of 13 | test_terminfo_defaults_to_the_database_named_by_env |
+| 13 | Accept a 40 KB terminfo file | test_an_oversized_file_is_not_read |
+| 14 | Raise Windows truecolor threshold to 14932 | test_supports_color_windows_builds_match |
+| 15 | Test VT mode with OR instead of AND | test_a_real_console_is_read_and_switched |
+| 16 | Wrong error type for a non-text terminal name | test_non_string_terminfo_names_raise_type_error |
+| 17 | Echo invalid parse input | test_errors_do_not_echo_invalid_values |
+| 18 | Remove the integer diagnostic bound | test_huge_integers_keep_exact_comparisons_and_bounded_reasons |
+| 19 | Restore argument-echoing CLI diagnostics | test_invalid_arguments_are_not_echoed |
+
+## Gates (item 15)
+
+Each command exits zero independently: ruff format --check ., ruff check .,
+mypy --strict src, mypy --strict src tests and pytest. The complete run with
+COLORSUPPORT_E2E=1 and fetched sources has 266 passed, one skipped (POSIX FIFO on
+Windows). The default suite has 264 passed, three skipped (the two opt-in e2e cases
+and POSIX FIFO). Every public docstring example and every README/GUIDE Python
+example executes in the suite. All tests use a 300-second timeout.
+
+## Interpreter matrix (item 10)
+
+Every distinct working CPython build found on this machine ran the sdist's tests
+against the installed wheel, with the source package excluded from the extracted
+sdist so it could not shadow the install. Each result is 264 passed, three skipped
+(the two opt-in wheel-building cases and POSIX FIFO). The wheel's CLI and real
+Windows console test run in this suite, as does the Node.js reference comparison.
+
+| Python | Build | Result |
+| --- | --- | --- |
+| 3.10.11 | Embedded | PASS |
+| 3.10.22 | Standalone | PASS |
+| 3.11.9 | Embedded | PASS |
+| 3.11.11 | Blender-bundled CPython | PASS |
+| 3.11.18 | Standalone | PASS |
+| 3.12.10 | Embedded | PASS |
+| 3.12.16 | Standalone | PASS |
+| 3.13.2 | Embedded | PASS |
+| 3.13.18 | Standalone | PASS |
+| 3.14.6 | System installation | PASS |
+| 3.14.10 | Standalone | PASS |
+| 3.14.10t | Free-threaded | PASS |
+
+Embedded builds were copied into scratch and configured to find their local standard
+library and installed test dependencies. Existing interpreters were not modified.
+The 3.10 embedded path order was adjusted for mypy's discovery subprocess. Tests now
+use inspect.get_annotations to avoid Python 3.10's implicit Optional conversion,
+discover the installed wheel through mypy's --python-executable option, and import
+venv only inside the opt-in e2e test. All supported minor versions were exercised.
+Stale launcher entries pointing at removed interpreter folders were not runnable.
+
+## Preparation scorecard
+
+| Items | Result | Evidence |
+| --- | --- | --- |
+| 1, 2 | PASS | Seven stable exports, signatures/defaults pinned in contract tests |
+| 3 | PASS | Runnable public docstrings and README/GUIDE examples |
+| 4 | PASS | Strict typing for src and tests, installed consumers, py.typed |
+| 5 | PASS | Documented builtin error types, bounded API and CLI diagnostics |
+| 6 | PASS | Contract, boundary, callback, Windows, terminfo and CLI tests |
+| 7 | PASS | Eleven live-fetched sources and 3,000 live reference comparisons |
+| 8 | PASS | Fresh wheel installation and actual PyPI 0.1.0 upgrade |
+| 9 | PASS | Fixed seeds, malformed binaries, huge inputs and diagnostic bounds |
+| 10 | PASS | Twelve working Python builds, all supported minor versions |
+| 11, 12 | PASS | README badge/links, GUIDE, dated CHANGELOG and twine checks |
+| 13, 14 | PASS | Stable metadata, no runtime dependencies, archives inspected |
+| 15 | PASS | Four gates exit zero independently; 266 tests with e2e enabled |
+| 16 | Pending | Independent reviewer |
+| 17 | Pending | Merge and publication |
+| 18 | PASS | All 19 deliberate mutations killed |
+| 19 | Pending | Five independent QA lenses |

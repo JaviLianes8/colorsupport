@@ -86,13 +86,15 @@ are represented as `a large integer` in reasons while comparisons remain exact.
 stream; output still goes to stdout. `--when` accepts auto, always or never.
 `--check LEVEL` prints nothing, exits 0 for a sufficient level and 1 otherwise.
 Invalid usage exits 2. `--json` and `--check` are mutually exclusive.
+Usage errors give bounded guidance without echoing the supplied arguments.
 
 ## Upgrade from 0.1.0
 
 Install 1.0.0 with `python -m pip install --upgrade colorsupport`. Normal detection,
 constructor behavior, enum values and command-line output are unchanged. Invalid
 value messages omit the input, non-string terminfo names consistently raise TypeError,
-and huge numeric diagnostics are bounded. Stream annotations now use `object`.
+and huge numeric diagnostics are bounded. CLI usage errors now omit arguments.
+Stream annotations now use `object`.
 See the [CHANGELOG](https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md).
 
 ## Verification

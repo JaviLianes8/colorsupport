@@ -13,6 +13,8 @@ All notable changes to this project are documented here. The format follows
 - Type stream arguments as `object` instead of `Any`, retaining arbitrary stream support.
 - Invalid `when` and unknown color-level messages no longer repeat the supplied value;
   non-string level type names are limited to 40 characters.
+- Invalid command-line usage prints bounded option guidance without repeating arguments;
+  its exit code remains 2.
 - `terminfo_colors` now consistently raises `TypeError` for non-string names, including
   falsey objects that previously returned None and integers that raised AttributeError.
 - Build numbers and injected terminfo counts wider than 64 bits are described as

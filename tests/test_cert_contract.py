@@ -8,7 +8,6 @@ import inspect
 import pickle
 import re
 from pathlib import Path
-from typing import get_type_hints
 
 import pytest
 from conftest import TTY
@@ -31,7 +30,7 @@ def test_detection_signatures_and_defaults_are_stable() -> None:
         assert params[0].kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
         assert all(p.kind is inspect.Parameter.KEYWORD_ONLY for p in params[1:])
         assert [p.default for p in params] == [None, None, "auto", None, None, None, None]
-        assert get_type_hints(function)["stream"] is object
+        assert inspect.get_annotations(function, eval_str=True)["stream"] is object
     for other, names, defaults in (
         (cs.enable_vt, ["stream"], [None]),
         (cs.terminfo_colors, ["term", "env"], [inspect.Parameter.empty, None]),
