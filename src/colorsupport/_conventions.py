@@ -36,7 +36,7 @@ def read_override(env: Mapping[str, str], when: str) -> Override | None:
     if when == "always":
         return Override(ColorLevel.BASIC, False, "the caller turned color on (when='always')")
     if when != "auto":
-        raise ValueError(f"when must be one of {', '.join(WHEN_CHOICES)}, got {when!r}")
+        raise ValueError(f"when must be one of {', '.join(WHEN_CHOICES)}")
     if env.get("NO_COLOR"):
         return Override(ColorLevel.NONE, True, "NO_COLOR is set")
     force = env.get("FORCE_COLOR", "")

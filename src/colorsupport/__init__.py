@@ -7,7 +7,7 @@ from ._level import ColorLevel, Detection
 from ._terminfo import terminfo_colors
 from ._windows import enable_vt
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "ColorLevel",

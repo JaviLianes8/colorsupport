@@ -1,5 +1,7 @@
 # colorsupport
 
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
 Detect how much color a terminal stream can show (none, 16, 256 or truecolor) and say
 why. It follows the `NO_COLOR`, `FORCE_COLOR`, `CLICOLOR` and `CLICOLOR_FORCE`
 conventions, reads `TERM`, `COLORTERM`, terminfo, CI services and Windows consoles, and
@@ -174,6 +176,10 @@ none: NO_COLOR is set
 | `enable_vt(stream=None)` | Turn on escape sequence processing for a Windows console |
 | `terminfo_colors(term, env=None)` | The `colors` number of a terminfo entry, or None |
 
+The [GUIDE](https://github.com/JaviLianes8/colorsupport/blob/main/GUIDE.md) describes
+the stable API, errors and upgrade behavior. See the
+[CHANGELOG](https://github.com/JaviLianes8/colorsupport/blob/main/CHANGELOG.md) for releases.
+
 ## Why
 
 Terminal programs keep rewriting the same check and getting the conventions subtly
@@ -193,7 +199,7 @@ them so the tests can check the rules against them.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/JaviLianes8/colorsupport/blob/main/LICENSE).
 
 ## Links
 
