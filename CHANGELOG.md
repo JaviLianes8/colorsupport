@@ -38,6 +38,11 @@ All notable changes to this project are documented here. The format follows
   during equality-result truth conversion. Production behavior remains unchanged.
 - Cover negative truthy equality results, binary numeric text rejection and None
   rejection in constructor contracts. Production behavior and the public API are unchanged.
+- The command prints plain usage, help and error text on every Python version; on 3.14
+  argparse would otherwise color them by the state of stdout, even when stderr is piped.
+- Pin the caller-value boundary of every public parameter with one poisoned-subclass
+  table, the command line with table-driven spellings (whitespace, CRLF, repeats,
+  prefixes, escapes) and the exact plain and JSON output.
 - Read every caller-supplied value once, through its base type, before any rule looks at
   it, so no method of the caller's object runs and nothing it could raise or claim escapes:
   - `ColorLevel(value)` accepts an int, bool, float, complex with a zero imaginary part,

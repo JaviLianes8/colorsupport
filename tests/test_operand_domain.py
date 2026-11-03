@@ -84,7 +84,7 @@ def domain() -> Iterator[tuple[str, type, object, Fraction | None]]:
             yield f"int:{q}", int, int(q), q
         yield f"fraction:{q}", Fraction, q, q
         yield f"float:{q}", float, float(q), exact_float(float(q))
-        for imag in (0.0, -0.0, 5e-324, 1.0):
+        for imag in (0.0, -0.0, 5e-324, -5e-324, 1.0, -1.0):
             value = complex(float(q), imag)
             exact = exact_float(float(q)) if imag == 0 else None
             yield f"complex:{q}{imag:+}j", complex, value, exact

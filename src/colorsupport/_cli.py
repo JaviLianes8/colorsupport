@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from typing import NoReturn
+from typing import Any, NoReturn
 
 from ._detect import detect
 from ._level import ColorLevel
@@ -21,17 +21,14 @@ class _Parser(argparse.ArgumentParser):
         )
 
 
-def _level(text: str) -> ColorLevel:
-    try:
-        return ColorLevel.parse(text)
-    except ValueError as error:
-        raise argparse.ArgumentTypeError(str(error)) from None
-
-
 def _parser() -> argparse.ArgumentParser:
+    # Python 3.14 colors usage and help by the state of stdout, even when they go to stderr;
+    # the command prints the same plain text on every Python instead.
+    plain: dict[str, Any] = {"color": False} if sys.version_info >= (3, 14) else {}
     parser = _Parser(
         prog="colorsupport",
         description="Report how much color the terminal on stdout (or stderr) can show.",
+        **plain,
     )
     parser.add_argument("--stderr", action="store_true", help="look at stderr, not stdout")
     parser.add_argument(
@@ -45,7 +42,8 @@ def _parser() -> argparse.ArgumentParser:
     output.add_argument(
         "--check",
         metavar="LEVEL",
-        type=_level,
+        # argparse turns the ValueError of an unknown level into a usage error (exit 2).
+        type=ColorLevel.parse,
         help="print nothing; exit 0 if at least LEVEL (none, 16, 256, truecolor), else 1",
     )
     return parser

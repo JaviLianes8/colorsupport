@@ -70,3 +70,26 @@ def test_output_and_exit_codes_match_detect(
                 expected = 0 if found.level >= minimum else 1
                 result = run(monkeypatch, [*head, "--check", spelling], stderr_tty)
                 assert result == (expected, ""), (env, head, spelling)
+
+
+HELP = [
+    "usage: colorsupport [-h] [--stderr] [--when {auto,always,never}] [--json | --check LEVEL]",
+    "Report how much color the terminal on stdout (or stderr) can show.",
+    "--stderr look at stderr, not stdout",
+    "--when {auto,always,never} the --color choice of the calling program (default: auto)",
+    "--json print level, colors and reason",
+    "--check LEVEL print nothing; exit 0 if at least LEVEL (none, 16, 256, truecolor), else 1",
+]
+
+
+def test_help_names_every_option_and_its_meaning(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # A wide terminal keeps argparse from wrapping; spacing is then normalised.
+    monkeypatch.setenv("COLUMNS", "400")
+    with pytest.raises(SystemExit) as done:
+        main(["--help"])
+    assert done.value.code == 0
+    text = " ".join(capsys.readouterr().out.split())
+    for line in HELP:
+        assert line in text, line

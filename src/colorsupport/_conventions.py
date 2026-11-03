@@ -32,13 +32,13 @@ def read_override(env: Mapping[str, str], when: str) -> Override | None:
     Every variable set to an empty string counts as unset, as the NO_COLOR, FORCE_COLOR and
     CLICOLOR pages all ask.
     """
-    # A str subclass is compared by its exact value; any other type is unknown.
-    when = exact_str(when) or ""
-    if when == "never":
+    # A str subclass is compared by its exact value; any other type is unknown (None).
+    choice = exact_str(when)
+    if choice == "never":
         return Override(ColorLevel.NONE, True, "the caller turned color off (when='never')")
-    if when == "always":
+    if choice == "always":
         return Override(ColorLevel.BASIC, False, "the caller turned color on (when='always')")
-    if when != "auto":
+    if choice != "auto":
         raise ValueError(f"when must be one of {', '.join(WHEN_CHOICES)}")
     if env.get("NO_COLOR"):
         return Override(ColorLevel.NONE, True, "NO_COLOR is set")

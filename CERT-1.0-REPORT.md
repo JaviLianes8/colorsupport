@@ -243,6 +243,43 @@ mutations.json, N01/N02/N03-before/after.log and .xml, constructor.xml, full.log
 
 None.
 
+## QA round 6 (2026-11-04)
+
+Reviewed baseline: `9773f69`. Findings E19, E20 and E21 were already pinned by the
+round five contracts (test_constructor_accepts_negative_truthy_equality,
+test_constructor_rejects_binary_numeric_text, test_constructor_rejects_none); the
+reviewer re-checked 030ddbb, before them. Their mutants were re-run this round as R11
+(bytes coercion) and R12 (None as NONE), both killed.
+
+Root cause work, closing the mutant families instead of single mutants:
+- tests/test_poison_boundary.py: one table of every public text or number parameter,
+  each fed a poisoned subclass (every method raises or lies), with a drift guard that
+  fails when a public callable gains a parameter the table does not name.
+- tests/test_cli_lines.py: table-driven command lines (empty, whitespace-only, CRLF,
+  tabs, Unicode spaces, escapes, repeated options, prefixes) and exact plain and JSON
+  output bytes.
+- tests/test_boundary_values.py: case-folding lookalikes, nonzero vt integers, non-str
+  `when` (including an object faking `__class__`), the 40-character type name bound and
+  verbatim Detection text.
+- Behaviour change: on Python 3.14 argparse colored usage, help and errors by the state
+  of stdout even on a piped stderr; the parser now disables that (CHANGELOG).
+
+Own sweep (laptop, Python 3.14.6, -x, 300 s per test), 55 mutants defined in three
+families (A boundary reads, B command line and level text, C serialisation):
+
+| Result | Mutants |
+| --- | --- |
+| Killed | R01, R03-R13, R18, R20, R22, R24, R28, R30, R32, R34, R36, R38, R40, R42, R44, R46, R48, R50, R52 |
+| Survived, then killed by new contracts (re-run pending) | R02 (isinstance), R14 (negative imaginary part), R16 (41-character type name), R26 (non-str when as auto), R54 (stripped Detection text) |
+| Not yet run (run paused by the coordinator) | R15, R17, R19, R21, R23, R25, R27, R29, R31, R33, R35, R37, R39, R41, R43, R45, R47, R49, R51, R53, R55 |
+
+Gates: ruff format --check ., ruff check ., mypy --strict src and pytest exit 0
+(2344 passed, 3 skipped, default suite without opt-in e2e).
+
+### Disputed findings
+
+None.
+
 ## Packaging and upgrade (items 8, 11 to 14)
 
 The live endpoint https://pypi.org/pypi/colorsupport/json reported 0.1.0 on
