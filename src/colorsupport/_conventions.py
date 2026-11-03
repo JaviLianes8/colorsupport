@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ._level import ColorLevel
+from ._strict import exact_str
 from ._terminal import shown
 
 WHEN_CHOICES = ("auto", "always", "never")
@@ -31,6 +32,8 @@ def read_override(env: Mapping[str, str], when: str) -> Override | None:
     Every variable set to an empty string counts as unset, as the NO_COLOR, FORCE_COLOR and
     CLICOLOR pages all ask.
     """
+    # A str subclass is compared by its exact value; any other type is unknown.
+    when = exact_str(when) or ""
     if when == "never":
         return Override(ColorLevel.NONE, True, "the caller turned color off (when='never')")
     if when == "always":

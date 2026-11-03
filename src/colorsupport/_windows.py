@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ._level import ColorLevel
+from ._strict import exact_int
 from ._terminal import shown_number
 
 # Microsoft requires processed output together with virtual terminal processing.
@@ -40,10 +41,10 @@ def _handle(stream: object) -> int | None:
         method = getattr(stream, "fileno", None)
         if not callable(method):
             return None
-        fd = method()
+        fd = exact_int(method())
     except Exception:
         return None
-    if sys.platform != "win32" or not isinstance(fd, int):
+    if sys.platform != "win32" or fd is None:
         return None
     import msvcrt
 
@@ -106,7 +107,7 @@ def windows_level(
     stream: object, env: Mapping[str, str], vt: bool | None, build: int | None
 ) -> tuple[ColorLevel, str] | None:
     """Decide for a Windows console, or None to let the TERM rules decide (not a console)."""
-    state = vt_enabled(stream) if vt is None else vt
+    state = vt_enabled(stream) if vt is None else _flag(vt)
     if state is None:
         return None
     # ConEmu and ANSICON hook the console writes themselves, whatever the console mode.
@@ -118,7 +119,7 @@ def windows_level(
         return ColorLevel.NONE, "the Windows console has virtual terminal processing off"
     if "WT_SESSION" in env:
         return ColorLevel.TRUECOLOR, "Windows Terminal (WT_SESSION is set)"
-    number = windows_build() if build is None else build
+    number = windows_build() if build is None else _build(build)
     if number >= BUILD_TRUECOLOR:
         return (
             ColorLevel.TRUECOLOR,
@@ -130,3 +131,18 @@ def windows_level(
             f"Windows console with VT processing, build {shown_number(number)}",
         )
     return ColorLevel.BASIC, f"Windows console with VT processing, build {shown_number(number)}"
+
+
+def _flag(value: object) -> bool:
+    # bool cannot be subclassed; an int is read through its base type, nothing else runs.
+    number = exact_int(value)
+    if number is None:
+        raise TypeError("vt must be a bool or None")
+    return number != 0
+
+
+def _build(value: object) -> int:
+    number = exact_int(value)
+    if number is None:
+        raise TypeError("windows_build must be an int or None")
+    return number

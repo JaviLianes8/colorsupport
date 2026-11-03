@@ -18,10 +18,18 @@ means no terminal; missing or failing `fileno` means no Windows console. `None` 
 `vt` a boolean; omitted values are queried only when needed on Windows.
 `terminfo` is a callback taking a terminal name and returning an integer or None.
 Its exceptions propagate unchanged; it is a caller-supplied dependency, not a stream.
+Text and integer arguments are read once through their base type: a str subclass is
+read as its exact string and an int subclass as its exact integer, without calling any
+of their methods. Environment variables are copied once when detection starts; a value
+that is not a str counts as empty. A `vt`, `windows_build` or callback count that is not
+an integer raises `TypeError`.
 
 `ColorLevel` is an ordered `IntEnum`: NONE=0, BASIC=1, ANSI256=2, TRUECOLOR=3.
 Their `.colors` values are 0, 16, 256 and 16777216; `.label` values are `none`, `16`,
-`256` and `truecolor`. `ColorLevel.parse` accepts a label, member name or integer
+`256` and `truecolor`. `ColorLevel(value)` accepts an int, bool, float, complex with a
+zero imaginary part, Decimal or Fraction (or a subclass of one) whose exact value is 0
+to 3, read through the base type; text, bytes, None and every other object raise
+`ValueError`. `ColorLevel.parse` accepts a label, member name or integer
 level as text, stripping surrounding whitespace and ignoring case.
 `Detection(level, reason)` is a frozen, comparable, hashable dataclass. Its typed
 constructor expects a `ColorLevel` and a string, with no runtime coercion or validation.
@@ -76,6 +84,7 @@ a slash, backslash, colon or NUL are refused. The database folders are trusted i
 | `ColorLevel.parse` with non-text | `TypeError`, no value echoed |
 | `detect`, `level`, `supports_color` with unknown `when` | `ValueError`, choices listed |
 | `terminfo_colors` with non-text name | `TypeError` |
+| `vt`, `windows_build` or callback count not an integer | `TypeError` |
 | Caller-supplied `terminfo` callback fails | Original exception propagates |
 
 Other argument types must match the annotations. Environment values in reasons are
@@ -95,8 +104,9 @@ Usage errors give bounded guidance without echoing the supplied arguments.
 
 ## Upgrade from 0.1.0
 
-Install 1.0.0 with `python -m pip install --upgrade colorsupport`. Enum values, valid
-constructor behavior and command-line output are unchanged. Windows native console
+Install 1.0.0 with `python -m pip install --upgrade colorsupport`. Enum values,
+construction from standard numbers and command-line output are unchanged; objects that
+only compare equal to a level are no longer accepted by `ColorLevel(value)`. Windows native console
 detection now requires both processing flags, and `enable_vt` sets both. Invalid
 value messages omit the input, non-string terminfo names consistently raise TypeError,
 and huge numeric diagnostics are bounded. CLI usage errors now omit arguments.

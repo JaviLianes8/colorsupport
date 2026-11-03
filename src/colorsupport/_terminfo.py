@@ -7,6 +7,8 @@ import stat
 import struct
 from collections.abc import Mapping
 
+from ._strict import exact_str, read_env
+
 # The layout is described in ncurses term(5): six little-endian shorts (magic, then the
 # sizes of the names, booleans, numbers, strings and string table), the names, one byte per
 # boolean, a pad byte to an even offset, then the numbers. `max_colors` is the 14th number
@@ -91,14 +93,19 @@ def terminfo_colors(term: str, env: Mapping[str, str] | None = None) -> int | No
     with a dot) are refused, and only regular files are read, so a FIFO or a device in the
     database cannot block the call.
 
-    An invalid name returns None. A non-string name raises TypeError.
+    An invalid name returns None. A non-string name raises TypeError. A str subclass, as
+    the name or as a variable, is read as its exact str value without calling its methods.
 
     >>> terminfo_colors("../outside", {}) is None
     True
     """
-    env = os.environ if env is None else env
-    if not isinstance(term, str):
+    # The name and the variables are read once as exact strings, so the methods of a str
+    # subclass cannot bypass the checks below.
+    name = exact_str(term)
+    if name is None:
         raise TypeError("term must be a str")
+    term = name
+    env = read_env(os.environ if env is None else env, ("TERMINFO", "HOME", "TERMINFO_DIRS"))
     if not term or term.startswith(".") or any(c in term for c in "/\\:\0"):
         return None
     first = term[0]

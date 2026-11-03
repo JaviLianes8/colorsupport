@@ -6,6 +6,7 @@ import re
 from collections.abc import Callable, Mapping
 
 from ._level import ColorLevel
+from ._strict import exact_int
 
 Found = tuple[ColorLevel, str]
 
@@ -94,9 +95,13 @@ def _by_name(term: str) -> Found | None:
 def _by_terminfo(term: str, terminfo: Callable[[str], int | None]) -> Found | None:
     if not term:
         return None
-    colors = terminfo(term)
-    if colors is None:
+    found = terminfo(term)
+    if found is None:
         return None
+    # The callback's count is read through int, so an int subclass cannot lie in comparisons.
+    colors = exact_int(found)
+    if colors is None:
+        raise TypeError("terminfo must return an int or None")
     reason = f"terminfo for TERM={shown(term)} declares {shown_number(colors)} colors"
     if colors >= 16_777_216:
         return ColorLevel.TRUECOLOR, reason

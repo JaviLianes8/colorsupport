@@ -38,6 +38,18 @@ All notable changes to this project are documented here. The format follows
   during equality-result truth conversion. Production behavior remains unchanged.
 - Cover negative truthy equality results, binary numeric text rejection and None
   rejection in constructor contracts. Production behavior and the public API are unchanged.
+- Read every caller-supplied value once, through its base type, before any rule looks at
+  it, so no method of the caller's object runs and nothing it could raise or claim escapes:
+  - `ColorLevel(value)` accepts an int, bool, float, complex with a zero imaginary part,
+    Decimal or Fraction (or a subclass of one) whose exact value is 0 to 3. Other objects
+    that merely compare equal to a level (custom `__eq__`, `__index__` or numeric types
+    outside the standard library) now raise the same redacted `ValueError`.
+  - A str subclass passed as `when`, `platform`, an environment value, a terminfo name or
+    `ColorLevel.parse` text is read as its exact str value. Detection copies the variables
+    it reads once at the start; a value that is not a str counts as empty.
+  - `vt`, `windows_build` and the count returned by a `terminfo` callback are read as
+    exact integers (bool and int subclasses included); other types raise `TypeError`
+    instead of failing later with an unrelated error.
 
 ## [0.1.0]
 

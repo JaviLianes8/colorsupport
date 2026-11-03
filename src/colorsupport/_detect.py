@@ -9,12 +9,23 @@ from typing import Literal
 
 from ._conventions import read_override
 from ._level import ColorLevel, Detection
+from ._strict import exact_str, read_env
 from ._terminal import ci_level, term_level
 from ._terminfo import terminfo_colors
 from ._windows import windows_level
 
 When = Literal["auto", "always", "never"]
 Terminfo = Callable[[str], int | None]
+
+# Every variable detection reads. They are copied once, as exact strings, before any rule
+# looks at them, so no rule can see a str subclass or read a variable twice.
+ENV_NAMES = (
+    *("NO_COLOR", "FORCE_COLOR", "CLICOLOR_FORCE", "CLICOLOR", "TF_BUILD", "AGENT_NAME"),
+    *("TERM", "COLORTERM", "TERM_PROGRAM", "TERM_PROGRAM_VERSION", "CI", "CI_NAME"),
+    *("GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI", "TRAVIS", "APPVEYOR", "GITLAB_CI"),
+    *("BUILDKITE", "DRONE", "TEAMCITY_VERSION", "ConEmuANSI", "ANSICON", "WT_SESSION"),
+    *("TERMINFO", "HOME", "TERMINFO_DIRS"),
+)
 
 
 def detect(
@@ -33,6 +44,8 @@ def detect(
     other input defaults to the real one: env to os.environ, platform to sys.platform,
     windows_build to the running build, vt to the console mode of stream on Windows, and
     terminfo to `terminfo_colors` reading the terminfo database named by env.
+    Text and integer inputs are read once as their exact base values, so str and int
+    subclasses cannot change the result; a non-integer vt or windows_build raises TypeError.
 
     when is the program's own `--color` choice: "always" turns color on past NO_COLOR and
     the other switches, "never" turns it off, "auto" (the default) reads the environment.
@@ -42,7 +55,7 @@ def detect(
     >>> detect(env={"FORCE_COLOR": "2"}).level is ColorLevel.ANSI256
     True
     """
-    env = os.environ if env is None else env
+    env = read_env(os.environ if env is None else env, ENV_NAMES)
     override = read_override(env, when)
     if override is not None and override.exact:
         return Detection(override.level, override.reason)
@@ -127,7 +140,8 @@ def _terminal(
 ) -> tuple[ColorLevel, str] | None:
     if env.get("TERM") == "dumb":
         return ColorLevel.NONE, "TERM=dumb"
-    if (sys.platform if platform is None else platform) == "win32":
+    system = sys.platform if platform is None else exact_str(platform)
+    if system == "win32":
         found = windows_level(stream, env, vt, windows_build)
         if found is not None:
             return found
